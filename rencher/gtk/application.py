@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import os
 import threading
@@ -11,26 +10,22 @@ import requests
 from rich.logging import RichHandler
 
 import rencher
-from rencher.gtk.rpc import RPC
+from rencher.gtk.rpc import Rpc
 from rencher.renpy.config import RencherConfig
 
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk  # noqa: E402
 
-Adw.init()
-
-from rencher.gtk.filemonitor import RencherFileMonitor  # noqa: E402
 from rencher.gtk.window import MainWindow  # noqa: E402
 from rencher.renpy.paths import local_path  # noqa: E402
 
 
-class MainApplication(Gtk.Application):
+class MainApplication(Adw.Application):
     config: ConfigParser
     window: MainWindow
-    file_monitor: RencherFileMonitor
 
-    rpc: RPC
+    rpc: Rpc
 
     def __init__(self, *args, **kwargs):
         super().__init__(
@@ -59,8 +54,6 @@ class MainApplication(Gtk.Application):
             handlers=[rich_handler, file_handler],
         )
 
-        watchdog_logger = logging.getLogger('watchdog')
-        watchdog_logger.propagate = False
         urllib3_logger = logging.getLogger('urllib3')
         urllib3_logger.setLevel(logging.WARNING)
 
@@ -79,7 +72,7 @@ class MainApplication(Gtk.Application):
             if accels:
                 self.set_accels_for_action(f'app.{name}', accels)
 
-        self.rpc = RPC(1485229562123124818)
+        self.rpc = Rpc(1485229562123124818)
         self.rpc.start()
 
     @override
@@ -97,7 +90,7 @@ class MainApplication(Gtk.Application):
 
     @override
     def do_activate(self):
-        Gtk.Application.do_activate(self)
+        Adw.Application.do_activate(self)
 
         self.config = RencherConfig()
         self.window = MainWindow(application=self)

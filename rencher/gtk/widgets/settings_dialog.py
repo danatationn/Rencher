@@ -1,14 +1,11 @@
-import logging
 import os.path
 import platform
 import threading
-import time
 from pathlib import Path
 from typing import TYPE_CHECKING, override
 
 from gi.repository import Adw, GLib, Gtk
 
-from rencher.gtk.tasks import TaskTypeEnum
 from rencher.gtk.utils import open_file_manager
 from rencher.renpy.config import RencherConfig
 from rencher.renpy.paths import local_path
@@ -95,10 +92,11 @@ class SettingsDialog(Adw.PreferencesDialog):
     def on_folder_selected(self, dialog: Gtk.FileDialog, result):
         try:
             folder = dialog.select_folder_finish(result)
-        except GLib.GError:
+        except GLib.Error:
             pass  # dialog was dismissed by user
         else:
-            self.data_dir_entry.set_text(folder.get_path())
+            path = folder.get_path()
+            self.data_dir_entry.set_text(path if path else '')
 
     @Gtk.Template.Callback()
     def on_check_updates(self, _):
@@ -131,7 +129,6 @@ class SettingsDialog(Adw.PreferencesDialog):
         games_dir = data_dir / 'games'
 
         def nuke_thread():
-            self.window.filemonitor.pause_monitor('*')
             toast = Adw.Toast(title='All games have been successfully deleted', timeout=5)
             total_work = 0
             completed = 0
@@ -143,9 +140,7 @@ class SettingsDialog(Adw.PreferencesDialog):
                 for _ in files:
                     total_work += 1
 
-            task_date = time.time()
-            GLib.idle_add(self.window.tasks_popover.new_task, task_date, 'everything', TaskTypeEnum.DELETE, None,
-                          total_work)
+            # task = self.window.tasks_popover.new_task('', TaskTypeEnum.NUKE, None, total_work)
 
             for _, dirs, _ in os.walk(games_dir):
                 for dir in dirs:
@@ -163,7 +158,7 @@ class SettingsDialog(Adw.PreferencesDialog):
                     except FileNotFoundError:
                         pass
                     completed += 1
-                    GLib.idle_add(self.window.tasks_popover.update_task, task_date, completed)
+                    # self.window.tasks_popover.update_task(task, completed)
 
                 for dirname in dirs:
                     dir = os.path.join(root, dirname)
@@ -174,13 +169,12 @@ class SettingsDialog(Adw.PreferencesDialog):
                     except FileNotFoundError:
                         pass
                     completed += 1
-                    GLib.idle_add(self.window.tasks_popover.update_task, task_date, completed)
+                    # self.window.tasks_popover.update_task(task, completed)
 
                 if root in rpaths:
                     GLib.idle_add(lambda r=root: self.window.library.remove_game(r))
 
             GLib.idle_add(lambda: (
-                self.window.filemonitor.resume_monitor('*'),
                 self.window.toast_overlay.add_toast(toast),
             ))
 

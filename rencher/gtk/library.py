@@ -73,7 +73,7 @@ class Library(GObject.Object):
         except GameNoExecutableError:
             self.window.codename_dialog.popup(rpath)
         except GameInvalidError:
-            pass
+            logging.debug(f'Couldn\'t load {rpath}')
         else:
             self.store.append(game_item)
             self.emit('game-added', game_item)

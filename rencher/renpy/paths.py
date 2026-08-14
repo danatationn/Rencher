@@ -7,6 +7,7 @@ local_path = Path()
 config_path = Path()
 
 if platform.system() == 'Linux':
+    # TODO figure out why this isn't in .var/
     data_home = Path(os.environ.get('XDG_DATA_HOME', Path.home() / '.local' / 'share'))
     local_path = data_home / 'rencher'
     config_path = local_path / 'config.ini'
@@ -14,22 +15,21 @@ elif platform.system() == 'Windows':
     local_path = Path.home() / 'AppData' / 'Local' / 'Rencher'
     config_path = local_path / 'config.ini'
 
-# @lru_cache
-def get_py_files(apath: Path | str) -> list[str]:
+@lru_cache
+def get_py_files(apath: Path | str) -> list[Path]:
     if isinstance(apath, str):
         apath = Path(apath)
 
-    return [file for file in os.listdir(apath) if os.path.splitext(file)[1] == '.py']
+    # return [file.name for file in apath.iterdir() if file.suffix == '.py']
+    return [file for file in apath.iterdir() if file.suffix == '.py']
 
 @lru_cache
-def get_rpa_files(rpath: Path | str) -> list[str]:
-    if isinstance(rpath, Path):
-        rpath = str(rpath)
-    elif not isinstance(rpath, str):
-        return []
+def get_rpa_files(rpath: Path | str) -> list[Path]:
+    if isinstance(rpath, str):
+        rpath = Path(rpath)
 
-    rp_files: list[str] = []
-    for top_dir, _, files in os.walk(rpath):
+    rp_files: list[Path] = []
+    for top_dir, _, files in rpath.walk():
         for f in files:
             ext = os.path.splitext(f)[1]
             if not ext.startswith('.rp'):
@@ -43,15 +43,13 @@ def get_rpa_files(rpath: Path | str) -> list[str]:
             # cache file
             if ext == '.rpyb':
                 continue
-            rp_files.append(os.path.join(top_dir, f))
+            rp_files.append(top_dir / f)
 
     return rp_files
 
-def get_rpa_path(rpath: Path | str) -> str | None:
-    if isinstance(rpath, Path):
-        rpath = str(rpath)
-    elif not isinstance(rpath, str):
-        return None
+def get_rpa_path(rpath: Path | str) -> Path | None:
+    if isinstance(rpath, str):
+        rpath = Path(rpath)
 
     game_files = get_rpa_files(rpath)
     if not game_files:
@@ -59,22 +57,17 @@ def get_rpa_path(rpath: Path | str) -> str | None:
 
     # some mods apparently store ren'py files in lib/
     # those are further nested inside the game so just try and get the top folder
-    rpa_path = min(game_files, key=lambda path: path.count(os.sep))
-    return os.path.dirname(rpa_path)
+    rpa_path = min(game_files, key=lambda path: len(path.parents))
+    return rpa_path.parent
 
-def get_absolute_path(rpath: Path | str) -> str | None:
-    if isinstance(rpath, Path):
-        rpath = str(rpath)
-    elif not isinstance(rpath, str):
-        return None
+def get_absolute_path(rpath: Path | str) -> Path | None:
+    if isinstance(rpath, str):
+        rpath = Path(rpath)
 
-    try:
-        rpa_path = get_rpa_path(rpath)
-        return os.path.dirname(rpa_path)
-    except IndexError:
-        return None
-    except TypeError:
-        return None
+    rpa_path = get_rpa_path(rpath)
+    if rpa_path:
+        return rpa_path.parent
+    return None
 
 def validate_game_files(files: list[str]) -> bool:
     """

@@ -5,9 +5,8 @@
  	<file compressed="true" preprocess="xml-stripblanks">ui/options.ui</file>
  	<file compressed="true" preprocess="xml-stripblanks">ui/settings.ui</file>
  	<file compressed="true" preprocess="xml-stripblanks">ui/shortcuts.ui</file>
- 	<file compressed="true" preprocess="xml-stripblanks">ui/tasks_popover.ui</file>
- 	<file compressed="true" preprocess="xml-stripblanks">ui/tasks_row.ui</file>
   	<file compressed="true" preprocess="xml-stripblanks">ui/window.ui</file>
+ 	<file compressed="true" preprocess="xml-stripblanks">ui/game_detail_view.ui</file>
 
    <!-- not needed on linux but it is on windows -->
 	<file alias="icons/16x16/apps/com.github.danatationn.rencher.png" compressed="true">assets/rencher-icon16.png</file>
@@ -17,21 +16,21 @@
 	<file alias="icons/128x128/apps/com.github.danatationn.rencher.png" compressed="true">assets/rencher-icon128.png</file>
 	<file alias="icons/256x256/apps/com.github.danatationn.rencher.png" compressed="true">assets/rencher-icon256.png</file>
 
-    <file compressed="true" preprocess="xml-stripblanks">icons/rencher-icon-symbolic.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">icons/xbox-controller-symbolic.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">icons/cogged-wheel-symbolic.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">icons/view-sort-ascending-symbolic.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">icons/list-add-symbolic.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">icons/loupe-large-symbolic.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">icons/folder-open-symbolic.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">icons/external-link-symbolic.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">icons/file-cabinet-symbolic.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">icons/library-symbolic.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">icons/document-edit-symbolic.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">icons/menu-large-symbolic.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">icons/test-pass-symbolic.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">icons/list-large-symbolic.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">icons/stop-large-symbolic.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">icons/cross-large-symbolic.svg</file>
+    <file compressed="true">icons/scalable/apps/rencher-icon-symbolic.svg</file>
+    <file compressed="true">icons/scalable/actions/xbox-controller-symbolic.svg</file>
+    <file compressed="true">icons/scalable/actions/cogged-wheel-symbolic.svg</file>
+    <file compressed="true">icons/scalable/actions/view-sort-ascending-symbolic.svg</file>
+    <file compressed="true">icons/scalable/actions/list-add-symbolic.svg</file>
+    <file compressed="true">icons/scalable/actions/loupe-large-symbolic.svg</file>
+    <file compressed="true">icons/scalable/actions/folder-open-symbolic.svg</file>
+    <file compressed="true">icons/scalable/actions/external-link-symbolic.svg</file>
+    <file compressed="true">icons/scalable/actions/file-cabinet-symbolic.svg</file>
+    <file compressed="true">icons/scalable/actions/library-symbolic.svg</file>
+    <file compressed="true">icons/scalable/actions/document-edit-symbolic.svg</file>
+    <file compressed="true">icons/scalable/actions/menu-large-symbolic.svg</file>
+    <file compressed="true">icons/scalable/actions/test-pass-symbolic.svg</file>
+    <file compressed="true">icons/scalable/actions/list-large-symbolic.svg</file>
+    <file compressed="true">icons/scalable/actions/stop-large-symbolic.svg</file>
+    <file compressed="true">icons/scalable/actions/cross-large-symbolic.svg</file>
   </gresource>
 </gresources>

@@ -6,13 +6,12 @@ import threading
 import time
 import zipfile
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, override
 
 import rarfile
 from gi.repository import Adw, Gio, GLib, Gtk
 
 from rencher.gtk.game_entry import GameEntry
-from rencher.gtk.tasks import TaskTypeEnum
 from rencher.gtk.utils import windowficate_path
 from rencher.renpy.config import RencherConfig
 from rencher.renpy.game import Game
@@ -29,7 +28,7 @@ if TYPE_CHECKING:
 
 
 @Gtk.Template.from_resource('/com/github/danatationn/rencher/ui/import.ui')
-class ImportDialog(Adw.PreferencesDialog):
+class ImportDialog(Adw.Dialog):
     __gtype_name__: str = 'ImportDialog'
 
     title_entry: Adw.EntryRow = Gtk.Template.Child()
@@ -38,8 +37,9 @@ class ImportDialog(Adw.PreferencesDialog):
     type_combo: Adw.ComboRow = Gtk.Template.Child()
     game_combo: Adw.ComboRow = Gtk.Template.Child()
     import_button: Adw.ActionRow = Gtk.Template.Child()
-    mod_switch: Adw.SwitchRow = Gtk.Template.Child()
+    # mod_switch: Adw.SwitchRow = Gtk.Template.Child()
 
+    window: 'MainWindow'
     thread: threading.Thread
     cancel_flag: threading.Event
     has_imported: bool = False
@@ -59,22 +59,37 @@ class ImportDialog(Adw.PreferencesDialog):
         string_list.append('Folder')
         self.type_combo.set_model(string_list)
 
+
+    @override
     def do_show(self):
         list_store = Gio.ListStore.new(GameEntry)
+        list_store_len = 0
 
+        list_store.append(GameEntry())  # option for no mod . default
         for _, game_item in enumerate(self.window.library.store):
+            if not isinstance(game_item, GameEntry):
+                continue
             if not game_item.game.is_mod:
                 list_store.append(game_item)
+                list_store_len += 1
+
+        def _name_for_entry(entry: GameEntry, *_args):
+            if list_store_len == 0:
+                return 'None'
+            elif hasattr(entry, 'game'):
+                return os.path.basename(entry.rpath)
+            else:
+                return 'N/A'
 
         self.game_combo.set_model(list_store)
         self.game_combo.set_expression(
-            Gtk.PropertyExpression.new(GameEntry, None, 'name'),
+            Gtk.ClosureExpression.new(str, _name_for_entry, None),
         )
 
         if self.has_imported:
             self.title_entry.set_text('')
             self.location_entry.set_text('')
-            self.mod_switch.set_active(False)
+            # self.mod_switch.set_active(False)
             self.has_imported = False
 
     @Gtk.Template.Callback()
@@ -129,8 +144,9 @@ class ImportDialog(Adw.PreferencesDialog):
                 file = dialog.select_folder_finish(result)
             else:
                 file = dialog.open_finish(result)
-            self.location_entry.set_text(file.get_path())
-        except GLib.GError:
+            path = file.get_path()
+            self.location_entry.set_text(path if path else '')
+        except GLib.Error:
             pass  # dialog was dismissed by user
 
     @Gtk.Template.Callback()
@@ -145,9 +161,13 @@ class ImportDialog(Adw.PreferencesDialog):
         name = self.title_entry.get_text()
         location = self.location_entry.get_text()
         location_stem = os.path.splitext(os.path.basename(location))[0]
-        is_mod = self.mod_switch.get_active()
-        modded_game: GameEntry = self.game_combo.get_selected_item()  # type: ignore
-        archive: zipfile.ZipFile | rarfile.RarFile | None = None
+        archive: zipfile.ZipFile | rarfile.RarFile | None
+        modded_game = self.game_combo.get_selected_item()
+        is_mod = hasattr(modded_game, '_game')
+        if not modded_game:
+            # TODO throw error
+            ...
+            return
 
         data_dir = RencherConfig().get_data_dir()
         game_dir = os.path.join(data_dir, 'games')
@@ -168,7 +188,7 @@ class ImportDialog(Adw.PreferencesDialog):
                     Adw.Toast(
                         title='The archive supplied is invalid!',
                         timeout=5,
-                    )
+                    ),
                 )
                 return
             else:
@@ -185,7 +205,7 @@ class ImportDialog(Adw.PreferencesDialog):
                 Adw.Toast(
                     title='The game supplied is invalid!',
                     timeout=5,
-                )
+                ),
             )
             return
 
@@ -198,9 +218,9 @@ class ImportDialog(Adw.PreferencesDialog):
                 # this will never happen unless you're a freak
                 self.window.toast_overlay.add_toast(
                     Adw.Toast(
-                        title="Couldn't come up with a name",
+                        title="Couldn't come up with a name!",
                         timeout=5,
-                    )
+                    ),
                 )
                 return
 
@@ -225,7 +245,6 @@ class ImportDialog(Adw.PreferencesDialog):
         if not self.cancel_flag.is_set():
             logging.info(f'Importing the game at "{rpath}/"')
         start = time.perf_counter()
-        self.window.filemonitor.pause_monitor(rpath)
 
         if is_mod:
             game_files = glob.glob(f'{modded_game.rpath}/**', recursive=True)
@@ -233,8 +252,7 @@ class ImportDialog(Adw.PreferencesDialog):
         else:
             total_work = len(files)
 
-        task_date = time.time()
-        self.window.tasks_popover.new_task(task_date, name, TaskTypeEnum.IMPORT, self.cancel_flag, total_work)
+        # task = self.window.tasks_popover.new_task(name, TaskTypeEnum.IMPORT, self.cancel_flag, total_work)
 
         for i, path in enumerate(files):
             if self.cancel_flag.is_set():
@@ -251,7 +269,7 @@ class ImportDialog(Adw.PreferencesDialog):
                     os.makedirs(os.path.dirname(target_path), exist_ok=True)
                     shutil.copy(path, target_path)
 
-            GLib.idle_add(self.window.tasks_popover.update_task, task_date, i)
+            # self.window.tasks_popover.update_task(task, i)
 
         if is_mod:
             rpa_path = get_rpa_path(rpath)
@@ -295,7 +313,7 @@ class ImportDialog(Adw.PreferencesDialog):
                     os.makedirs(os.path.dirname(target_path), exist_ok=True)
                     shutil.copy(path, target_path)
 
-                GLib.idle_add(self.window.tasks_popover.update_task, task_date, len(files) + i)
+                # self.window.tasks_popover.update_task(task, len(files) + i)
 
         if not self.cancel_flag.is_set():
             game = Game(rpath=rpath)
@@ -336,9 +354,7 @@ class ImportDialog(Adw.PreferencesDialog):
                 else:
                     logging.info(f'Archive "{location_stem}" deleted!')
 
-            self.window.filemonitor.resume_monitor(rpath)
         else:
             shutil.rmtree(rpath)
             logging.info(f'Importing cancelled. Total thread runtime: {time.perf_counter() - start:.2f}s')
-            self.window.filemonitor.resume_monitor(rpath)
-        GLib.idle_add(self.window.tasks_popover.update_task, task_date, total_work)
+        # self.window.tasks_popover.update_task(task, total_work)

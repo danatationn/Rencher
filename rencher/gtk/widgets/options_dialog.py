@@ -1,19 +1,17 @@
 import logging
 import os
 import threading
-import time
 from configparser import ConfigParser
-from typing import TYPE_CHECKING, override
+from pathlib import Path
+from typing import override
 
-from gi.repository import Adw, GLib, Gtk
+from gi.repository import Adw, Gtk
 
-from rencher.gtk.tasks import TaskTypeEnum
+from rencher.gtk.game_entry import GameEntry
 from rencher.gtk.utils import open_file_manager
-from rencher.renpy.game import Game
-from rencher.renpy.paths import config_path, get_py_files
+from rencher.renpy.config import RencherConfig
+from rencher.renpy.paths import get_py_files
 
-if TYPE_CHECKING:
-    from rencher.gtk.window import MainWindow
 
 @Gtk.Template.from_resource('/com/github/danatationn/rencher/ui/options.ui')
 class OptionsDialog(Adw.PreferencesDialog):
@@ -33,13 +31,14 @@ class OptionsDialog(Adw.PreferencesDialog):
     switches_list: list[tuple[Gtk.Switch, Adw.SwitchRow, str]]
     # options_save_slot: Adw.SpinRow = Gtk.Template.Child()
 
-    game: Game
+    entry: GameEntry
     rencher_config: ConfigParser
 
-    def __init__(self, window: 'MainWindow'):
+    def __init__(self, entry: GameEntry):
         super().__init__()
 
-        self.window: MainWindow = window
+        self.entry = entry
+
         self.switches_list = [
             (self.overwrite_skip_splash_scr_switch, self.skip_splash_scr_switch, 'skip_splash_scr'),
             (self.overwrite_skip_main_menu_switch, self.skip_main_menu_switch, 'skip_main_menu'),
@@ -55,26 +54,26 @@ class OptionsDialog(Adw.PreferencesDialog):
         #     page_increment=10,
         # ))
 
-    def change_game(self, game: Game):
-        self.game = game
+        self.change_game(entry)
+
+    def change_game(self, entry: GameEntry):
+        self.entry.refresh(entry.game)
         string_list = Gtk.StringList()
         self.codename_combo.set_model(string_list)
 
-        with open(config_path) as f:
-            self.rencher_config = ConfigParser()
-            self.rencher_config.read_file(f)
+        self.rencher_config = RencherConfig()
 
-        self.nickname_entry.set_text(game.name)
-        self.location_row.set_subtitle(str(game.rpath))
+        self.nickname_entry.set_text(entry.name)
+        self.location_row.set_subtitle(str(entry.rpath))
         # self.options_save_slot.set_text(game.config['options']['save_slot'])
 
-        py_files = get_py_files(game.apath)
+        py_files = get_py_files(entry.apath)
 
         codename_index = None
         for i, path in enumerate(py_files):
             codename = os.path.splitext(os.path.basename(path))[0]
             string_list.append(codename)
-            if codename == game.config['info']['codename']:
+            if codename == entry.config['info']['codename']:
                 codename_index = i
 
         self.codename_combo.set_model(string_list)
@@ -82,9 +81,9 @@ class OptionsDialog(Adw.PreferencesDialog):
             self.codename_combo.set_selected(codename_index)
 
         for overwrite_switch, switch, key in self.switches_list:
-            if game.config['options'][key] != '':  # overwritten
+            if entry.config['options'][key] != '':  # overwritten
                 overwrite_switch.set_active(True)
-                if game.config['options'][key] == 'true':
+                if entry.config['options'][key] == 'true':
                     switch.set_active(True)
                 else:
                     switch.set_active(False)
@@ -97,36 +96,34 @@ class OptionsDialog(Adw.PreferencesDialog):
 
     @override
     def do_closed(self):
-        if not os.path.isdir(self.game.rpath):
+        if not Path(self.entry.rpath).is_dir():
             return  # it got deleted
 
-        if self.game.name != self.nickname_entry.get_text():
-            self.game.config['info']['nickname'] = self.nickname_entry.get_text()
-        if self.game.codename != self.codename_combo.get_selected_item().get_string():
-            self.game.config['info']['codename'] = self.codename_combo.get_selected_item().get_string()
+        sel_codename = self.codename_combo.get_selected_item()
+        logging.debug(type(sel_codename))
+        if not isinstance(sel_codename, Gtk.StringObject):
+            logging.error('TODO something has no scripts')
+            return
+
+        if self.entry.name != self.nickname_entry.get_text():
+            self.entry.config['info']['nickname'] = self.nickname_entry.get_text()
+        if self.entry.codename != sel_codename.get_string():
+            self.entry.config['info']['codename'] = sel_codename.get_string()
         # self.game.config['options']['save_slot'] = self.options_save_slot.get_text()
 
         for overwrite_switch, switch, key in self.switches_list:
             if overwrite_switch.get_active():
                 if switch.get_active():
-                    self.game.config['options'][key] = 'true'
-                    self.game.config['overwritten'][key] = 'true'
+                    self.entry.config['options'][key] = 'true'
+                    self.entry.config['overwritten'][key] = 'true'
                 else:
-                    self.game.config['options'][key] = 'false'
-                    self.game.config['overwritten'][key] = 'false'
+                    self.entry.config['options'][key] = 'false'
+                    self.entry.config['overwritten'][key] = 'false'
             else:
-                self.game.config['options'][key] = ''
-                self.game.config['overwritten'][key] = self.rencher_config['settings'][key]
+                self.entry.config['options'][key] = ''
+                self.entry.config['overwritten'][key] = self.rencher_config['settings'][key]
 
-        def select():
-            for row, entry in self.window.games.items():
-                if entry.rpath == self.game.rpath:
-                    self.window.current_game_entry.refresh(self.game)
-                    self.window.library_list_box.select_row(row)
-                    break
-
-        self.game.config.write()
-        GLib.idle_add(select)
+        self.entry.config.write()
 
     @Gtk.Template.Callback()
     def on_switch_changed(self, _widget: Gtk.Switch | Adw.SwitchRow, _):
@@ -140,7 +137,7 @@ class OptionsDialog(Adw.PreferencesDialog):
 
     @Gtk.Template.Callback()
     def on_dir_clicked(self, _widget: Gtk.Button):
-        open_file_manager(str(self.game.rpath))
+        open_file_manager(str(self.entry.rpath))
 
     @Gtk.Template.Callback()
     def on_clear_info(self, _widget: Adw.ButtonRow):  # type: ignore
@@ -159,19 +156,22 @@ class OptionsDialog(Adw.PreferencesDialog):
     def on_clear_info_response(self, _, response: str):
         if response == 'ok':
             # slaughter time
-            self.game.config['info']['nickname'] = ''
-            self.game.config['info']['last_played'] = ''
-            self.game.config['info']['playtime'] = '0.0'
+            self.entry.config['info']['nickname'] = ''
+            self.entry.config['info']['last_played'] = ''
+            self.entry.config['info']['playtime'] = '0.0'
 
-            self.game.config['options']['skip_splash_scr'] = ''
-            self.game.config['options']['skip_main_menu'] = ''
-            self.game.config['options']['forced_save_dir'] = ''
+            self.entry.config['options']['skip_splash_scr'] = ''
+            self.entry.config['options']['skip_main_menu'] = ''
+            self.entry.config['options']['forced_save_dir'] = ''
+
             # self.game.config.write_config()
-            toast = Adw.Toast(
-                title=f'"{self.game.name}" stats have been reset',
-                timeout=5,
-            )
-            self.window.toast_overlay.add_toast(toast)
+
+            # TODO think how to do this
+            # toast = Adw.Toast(
+            #     title=f'"{self.entry.name}" stats have been reset',
+            #     timeout=5,
+            # )
+            # self.window.toast_overlay.add_toast(toast)
 
     @Gtk.Template.Callback()
     def on_delete_game(self, _widget: Adw.ButtonRow):  # type: ignore
@@ -191,24 +191,22 @@ class OptionsDialog(Adw.PreferencesDialog):
         if response != 'ok':
             return
 
-
         def delete_thread():
-            self.window.filemonitor.pause_monitor(self.game.rpath)
             # GLib.idle_add(self.window.library.remove_game, self.game.rpath)
-            toast = Adw.Toast(title=f'"{self.game.name}" has been deleted', timeout=5)
-            task_date = time.time()
+            toast = Adw.Toast(title=f'"{self.entry.name}" has been deleted', timeout=5)
+            # task_date = time.time()
             total_work = 0
             completed = 0
 
-            for _, dirs, files in os.walk(self.game.rpath):
+            for _, dirs, files in os.walk(self.entry.rpath):
                 for _ in dirs:
                     total_work += 1
                 for _ in files:
                     total_work += 1
 
-            self.window.tasks_popover.new_task(task_date, self.game.name, TaskTypeEnum.DELETE, None, total_work)
+            # task = self.window.tasks_popover.new_task(self.game.name, TaskTypeEnum.DELETE, None, total_work)
 
-            for root, dirs, files in os.walk(self.game.rpath, topdown=False):
+            for root, dirs, files in os.walk(self.entry.rpath, topdown=False):
                 for filename in files:
                     file = os.path.join(root, filename)
                     try:
@@ -218,7 +216,7 @@ class OptionsDialog(Adw.PreferencesDialog):
                     except FileNotFoundError:
                         pass
                     completed += 1
-                    GLib.idle_add(self.window.tasks_popover.update_task, task_date, completed)
+                    # self.window.tasks_popover.update_task(task, completed)
 
                 for dirname in dirs:
                     dir = os.path.join(root, dirname)
@@ -229,20 +227,19 @@ class OptionsDialog(Adw.PreferencesDialog):
                     except FileNotFoundError:
                         pass
                     completed += 1
-                    GLib.idle_add(self.window.tasks_popover.update_task, task_date, completed)
+                    # self.window.tasks_popover.update_task(task, completed)
 
             try:
-                os.rmdir(self.game.rpath)
+                os.rmdir(self.entry.rpath)
             except PermissionError:
                 pass
             except FileNotFoundError:
                 pass
 
-            GLib.idle_add(lambda: (
-                self.window.library.remove_game(self.game.rpath),
-                self.window.filemonitor.resume_monitor(self.game.rpath),
-                self.window.toast_overlay.add_toast(toast),
-            ))
+            # GLib.idle_add(lambda: (
+            #     self.window.library.remove_game(self.entry.rpath),
+            #     self.window.toast_overlay.add_toast(toast),
+            # ))
 
         thread = threading.Thread(target=delete_thread)
         thread.start()

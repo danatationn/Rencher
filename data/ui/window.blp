@@ -30,11 +30,6 @@ template $MainWindow : Adw.ApplicationWindow {
 		        icon-name: "menu-large-symbolic";
 		        menu-model: hamburger_menu;
 		    }
-		    [end]
-			MenuButton pie_progress_button {
-				styles ["flat"]
-				icon-name: "test-pass-symbolic";
-			}
 	    }
 
 		content: Overlay window_overlay {
@@ -118,135 +113,9 @@ template $MainWindow : Adw.ApplicationWindow {
 							child: Adw.StatusPage {
 								title: _("Welcome to Rencher!");
 								description: _("Select a game from the sidebar to get started");
-								// icon-name: "library-symbolic";
 								icon-name: "rencher-icon-symbolic";
 							};
 						}
-
-				        Adw.ViewStackPage selected_view {
-							name: 'selected';
-
-					        child: Adw.StatusPage selected_status_page {
-								title: "Title";
-								valign: start;
-								halign: center;
-
-								child: Box {
-									spacing: 16;
-									orientation: vertical;
-									width-request: 500;
-
-									Box {
-										orientation: horizontal;
-										halign: center;
-										spacing: 8;
-
-										Button play_button {
-											styles ["pill", "suggested-action"]
-
-											label: _("Play");
-
-											clicked => $on_play_clicked();
-										}
-										Button options_button {
-											styles ["circular"]
-											valign: center;
-
-											icon-name: "cogged-wheel-symbolic";
-
-											clicked => $on_options_clicked();
-										}
-									}
-
-									ListBox {
-										selection-mode: none;
-										styles ["boxed-list"]
-
-										Adw.ActionRow last_played_row {
-											title: _("Last Played");
-											styles ["property"]
-										}
-										Adw.ActionRow playtime_row {
-											title: _("Playtime");
-											styles ["property"]
-										}
-										Adw.ActionRow added_on_row {
-											title: _("Added On");
-											styles ["property"]
-										}
-										//Adw.ActionRow size_row {
-										//	title: _("Size");
-										//	styles ["property"]
-										//}
-									}
-
-									ListBox {
-										selection-mode: none;
-										styles ["boxed-list"]
-
-										Adw.ActionRow rpath_row {
-											title: _("Folder Location");
-											subtitle-selectable: true;
-
-											[suffix]
-											Button {
-												icon-name: "external-link-symbolic";
-												styles ["flat"]
-												valign: center;
-
-												clicked => $on_dir_clicked();
-											}
-
-											styles ["property"]
-										}
-										Adw.ActionRow version_row {
-											title: _("Engine Version");
-											subtitle-selectable: true;
-											styles ["property"]
-										}
-										Adw.ActionRow codename_row {
-											title: _("Codename");
-											subtitle-selectable: true;
-											styles ["property"]
-										}
-										Adw.ExpanderRow log_row {
-											title: _("Logs");
-											sensitive: false;
-
-										    ScrolledWindow {
-										        hscrollbar-policy: never;
-										        height-request: 200;
-										        margin-top: 6;
-										        margin-bottom: 6;
-										        margin-start: 12;
-										        margin-end: 12;
-
-										        TextView log_text_view {
-													left-margin: 6;
-													top-margin: 6;
-													right-margin: 6;
-										            editable: false;
-										            cursor-visible: false;
-										            wrap-mode: word_char;
-										            monospace: true;
-
-										            styles ["card"]
-										        }
-										    }
-										}
-									}
-
-									//ListBox {
-									//	selection-mode: none;
-									//	styles ["boxed-list"]
-
-									//	Adw.ExpanderRow {
-									//		title: _("Screenshots");
-									//	}
-									//}
-								};
-					        };
-				        }
 					};
 				};
 			}

@@ -2,6 +2,8 @@
 """
 HEAVILY inspired by the Nicotine+ cxfreeze script:
 https://github.com/nicotine-plus/nicotine-plus/blob/master/build-aux/windows/setup.py
+
+TODO stop trying to 
 """
 
 import os
@@ -112,7 +114,7 @@ def freeze(argv: list[str]):
                 'build_base': dest_dir,
             },
             'build_exe': {
-                'packages': ['requests', 'configparser', 'watchdog', 'rarfile', 'cairo', 'rich'],
+                'packages': ['requests', 'configparser', 'rarfile', 'cairo', 'rich'],
                 'optimize': 2,
                 'include_files': include_files,
                 'include_msvcr': True,

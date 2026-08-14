@@ -7,7 +7,9 @@ from pypresence.presence import AioPresence
 
 TIMEOUT_SECS = 1
 
-class RPC:
+# TODO when discord isn't open this does some really nasty spam to the console. make it not do that
+
+class Rpc:
     """
         rpc helper class
 

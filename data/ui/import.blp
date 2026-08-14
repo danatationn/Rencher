@@ -1,50 +1,60 @@
 using Gtk 4.0;
 using Adw 1;
 
-template $ImportDialog: Adw.PreferencesDialog {
+template $ImportDialog: Adw.Dialog {
 	title: _("Import");
-	
+	content-width: 600;
+	// follows-content-size: true;
+
 	child: Adw.ToolbarView {
 		top-bar-style: raised;
-	
+
 		[top]
 		Adw.HeaderBar {}
-		
+
 		content: Adw.PreferencesPage {
 			Adw.PreferencesGroup {
 				Adw.EntryRow title_entry {
 					title: _("Title");
 				}
+
 				Adw.ComboRow type_combo {
 					title: _("Type");
-
 					notify::selected-item => $on_type_changed();
 				}
+
 				Adw.EntryRow location_entry {
 					title: _("Archive Location");
-
 					changed => $on_location_changed();
 
 					[suffix]
 					Button location_picker {
 						icon-name: "file-cabinet-symbolic";
-						styles ["flat"]
-						valign: center;
 
+						styles [
+							"flat",
+						]
+
+						valign: center;
 						clicked => $on_picker_clicked();
 					}
 				}
 			}
 
 			Adw.PreferencesGroup {
-				Adw.SwitchRow mod_switch {
-					title: _("Import as Mod");
+				Adw.ComboRow game_combo {
+				    title: _("Mod Game");
+					enable-search: true;
 
-                }
-                Adw.ComboRow game_combo {
-                    title: _("Target Game");
-                    enable-search: true;
-                    sensitive: bind mod_switch.active;
+				    // [prefix]
+					// TODO figure out a way to show this after the title and before the combo
+					Image {
+    					valign: center;
+                        width-request: 34;
+                        height-request: 34;
+					    icon-name: "info-outline-symbolic";
+						tooltip-text: _("This replaces the original game's files, if using the right mod for the right game. You'll use this mostly with DDLC.");
+					}
 				}
 			}
 
@@ -52,7 +62,6 @@ template $ImportDialog: Adw.PreferencesDialog {
 				Adw.ButtonRow import_button {
 					title: _("Import");
 					sensitive: false;
-
 					activated => $on_import_clicked();
 				}
 			}

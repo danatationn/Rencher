@@ -37,7 +37,7 @@ Main features:
 ### Linux
 1. `uv sync`
 2. `meson setup build --prefix $(pwd)/build/root`
-3. `ninja -C install`
+3. `ninja -C build install`
 
 <details> <summary> Flatpak </summary>
 

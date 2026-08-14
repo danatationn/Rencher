@@ -1,6 +1,5 @@
 import os.path
 import platform
-import shutil
 import subprocess
 
 import gi
@@ -8,22 +7,6 @@ import gi
 gi.require_version('Gtk', '4.0')
 from gi.repository import Gio  # noqa: E402
 
-
-def return_comp(name: str) -> str:
-    if platform.system() == 'Linux':
-        comp_path = shutil.which(name)
-    else:
-        result = subprocess.run(
-            ['cygpath', '-m', f'/ucrt64/bin/{name}'],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        comp_path = result.stdout.strip()
-    if not comp_path:
-        raise FileNotFoundError(f'{name} is not installed. Exiting...')
-
-    return comp_path
 
 def open_file_manager(path: str):
     if platform.system() == 'Linux':

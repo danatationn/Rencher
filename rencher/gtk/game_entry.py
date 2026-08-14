@@ -1,25 +1,28 @@
+import logging
 import subprocess
 from typing import override
 
 from gi.repository import GLib, GObject
 
+from rencher.renpy.config import GameConfig
 from rencher.renpy.game import Game
 
 
-class GameItemDateError(Exception):
-    pass
-
-def format_date(time: float) -> str:
+def format_date(time: float) -> str | None:
     date = GLib.DateTime.new_from_unix_local(int(time))
     now = GLib.DateTime.new_now_local()
-    today = GLib.DateTime.new_local(
-        now.get_year(), now.get_month(), now.get_day_of_month(), 0, 0, 0,
-    )
+    if not date or not now:
+        return None
+    today = GLib.DateTime.new_local(now.get_year(), now.get_month(), now.get_day_of_month(), 0, 0, 0)
+    if not today:
+        return None
     yesterday = today.add_days(-1)
     tomorrow = today.add_days(1)
+    if not yesterday or not tomorrow:
+        return None
 
     if date.to_unix() == 0:
-        raise GameItemDateError()
+        return None
     elif date.compare(tomorrow) >= 0:
         return date.format('In the future')
     elif date.compare(today) >= 0:
@@ -29,7 +32,7 @@ def format_date(time: float) -> str:
     else:
         return date.format('%d %b %Y, %I:%M %p')
 
-def format_playtime(time: float) -> str:
+def format_playtime(time: float) -> str | None:
     hours = int(time / 3600)
     minutes = int((time % 3600) / 60)
     seconds = int((time % 3600) % 60)
@@ -38,39 +41,36 @@ def format_playtime(time: float) -> str:
     if formatted_playtime != '00:00:00':
         return formatted_playtime
     else:
-        raise GameItemDateError()
+        return None
 
 class GameEntry(GObject.Object):
-    """
-        used mostly for binding labels and shi
-
-        uhh
-    """
     __gtype_name__: str = 'GameEntry'
-    _game: Game | None = None
-    _process: subprocess.Popen[bytes] | None = None
-    name: GObject.Property = GObject.Property(type=str)
-    rpath: GObject.Property = GObject.Property(type=str)
-    apath: GObject.Property = GObject.Property(type=str)
-    last_played: GObject.Property = GObject.Property(type=str)
-    playtime: GObject.Property = GObject.Property(type=str)
-    added_on: GObject.Property = GObject.Property(type=str)
-    version: GObject.Property = GObject.Property(type=str)
-    codename: GObject.Property = GObject.Property(type=str)
+    _game: Game
+    _process: subprocess.Popen[bytes] | None
+    name: GObject.Property = GObject.Property(type=str, default='N/A')
+    rpath: GObject.Property = GObject.Property(type=str, default='N/A')
+    apath: GObject.Property = GObject.Property(type=str, default='N/A')
+    last_played: GObject.Property = GObject.Property(type=str, default='Never')
+    playtime: GObject.Property = GObject.Property(type=str, default='N/A')
+    added_on: GObject.Property = GObject.Property(type=str, default='N/A')
+    version: GObject.Property = GObject.Property(type=str, default='N/A')
+    codename: GObject.Property = GObject.Property(type=str, default='N/A')
 
     def __init__(self, rpath: str | None = None, game: Game | None = None):
         super().__init__()
 
+        self._process = None
+
         if not rpath and not game:
             return
         if game and not rpath:
-            rpath = game.rpath
+            rpath = str(game.rpath)
         if rpath and not game:
             game = Game(rpath=rpath)
 
         if game:
-            self.game = game
-            self.refresh(self.game)
+            self._game = game
+            self.refresh(game)
 
     @override
     def __eq__(self, other: object):
@@ -83,60 +83,42 @@ class GameEntry(GObject.Object):
     def __hash__(self):
         return hash(self.rpath)
 
-    # def __getstate__(self) -> dict:
-    #     return {
-    #         'game': self._game,
-    #     }
+    def run(self) -> subprocess.Popen[bytes]:
+        process = self.game.run()
+        self._process = process
+        return process
 
-    # def __setstate__(self, state: dict) -> None:
-    #     self.__init__()
-    #     game = state.get('_game', None)
-    #     if not game:
-    #         return
-    #     if not isinstance(game, Game):
-    #         return
-    #     if not game.is_valid:
-    #         return
-    #     self.game = game
-
-    def run(self) -> None:
-        if self.game:
-            self._process = self.game.run()
-
-    def refresh(self, game: Game | None) -> None:
-        if not game:
-            return
+    def refresh(self, game: Game) -> None:
         game.config.read()
 
-        property_map: dict[str, tuple[object, list[str]]] = {
-            'name': (game.get_name, []),
-            'rpath': (lambda: game.rpath, []),
-            'apath': (lambda: game.apath, []),
-            'last_played': (game.config.get_value, ['last_played']),
-            'added_on': (game.config.get_value, ['added_on']),
-            'playtime': (game.config.get_value, ['playtime']),
-            'version': (game.get_renpy_version, []),
-            'codename': (game.get_codename, []),
+        property_map: dict[str, object] = {
+            'name': lambda: game.name,
+            'rpath': lambda: game.rpath,
+            'apath': lambda: game.apath,
+            'last_played': lambda: game.config.get_value('last_played'),
+            'added_on': lambda: game.config.get_value('added_on'),
+            'playtime': lambda: game.config.get_value('playtime'),
+            'version': lambda: '.'.join(str(i) for i in game.get_renpy_version() or []),
+            'codename': lambda: game.codename,
         }
 
-        for prop, (func, args) in property_map.items():
+        for prop, getter in property_map.items():
             try:
-                value = func(*args)
+                value = getter()  # pyright: ignore[reportCallIssue, reportUnknownVariableType]
                 if prop in ['last_played', 'added_on']:
-                    setattr(self, prop, format_date(value))
+                    value = format_date(value)
                 elif prop == 'playtime':
-                    setattr(self, prop, format_playtime(value))
-                elif prop == 'version':
-                    setattr(self, prop, '.'.join(str(i) for i in value))
-                elif value:
-                    setattr(self, prop, value)
-                else:
-                    setattr(self, prop, 'N/A')
-            except Exception:
-                setattr(self, prop, 'N/A')
+                    value = format_playtime(value)
+
+                setattr(self, prop, value if value else 'N/A')
+            except Exception as e:
+                setattr(self, prop, 'Error!')
+                logging.warning(f'Couldn\'t set {prop}. {e}')
+
+    # i need to add all the other properties
 
     @property
-    def game(self) -> Game | None:
+    def game(self) -> Game:
         return self._game
     @game.setter
     def game(self, value: Game) -> None:
@@ -144,23 +126,16 @@ class GameEntry(GObject.Object):
         self.refresh(value)
     @property
     def is_mod(self) -> bool | None:
-        if self._game:
-            return self._game.is_mod
-        else:
-            return None
+        return self._game.is_mod
     @property
     def is_valid(self) -> bool | None:
-        if self._game:
-            return self._game.is_valid
-        else:
-            return None
+        return self._game.is_valid
     @property
     def is_launchable(self) -> bool | None:
-        if self._game:
-            return self._game.is_launchable
-        else:
-            return None
-
+        return self._game.is_launchable
     @property
     def process(self) -> subprocess.Popen[bytes] | None:
         return self._process
+    @property
+    def config(self) -> GameConfig:
+        return self.game.config

@@ -1,6 +1,6 @@
 [project]
 name = "Rencher"
-version = "1.2.3"
+version = "1.3.0"
 description = "Play and mod Ren'Py games"
 requires-python = ">=3.12"
 dependencies = [
@@ -11,9 +11,14 @@ dependencies = [
     "rarfile>=4.2",
     "requests>=2.32.4",
     "rich>=14.3.3",
-    "watchdog>=6.0.0",
 ]
 
+[dependency-groups]
+dev = [
+    "pygobject-stubs>=2.13.0",
+    "cx-freeze>=8.6.2; sys.platform == 'win32'",
+    "flatpak-pip-generator>=26.3.11; sys.platform == 'linux'",
+]
 
 [build-system]
 requires = ["setuptools"]
@@ -27,17 +32,17 @@ where = ["."]
 # so only modules get added
 namespaces = false
 
-
 [tool.pyright]
-reportMissingModuleSource = false
-reportUnusedCallResult = false
 reportAny = false
 reportExplicitAny = false
-reportUnknownMemberType = false
+reportMissingModuleSource = false
 reportMissingParameterType = false
+reportMissingTypeStubs = false
+reportUnusedCallResult = false
+reportUnknownMemberType = false
 reportUnknownParameterType = false
 reportUnknownArgumentType = false
-reportMissingTypeStubs = false
+reportUnknownLambdaType = false
 
 [tool.ruff]
 line-length = 120
@@ -54,17 +59,9 @@ extend-select = [
     "COM",
 ]
 
-
 [tool.ruff.format]
 quote-style = "single"
 indent-style = "space"
-
-[dependency-groups]
-dev = [
-    "pygobject-stubs>=2.13.0",
-    "cx-freeze>=8.6.2; sys.platform == 'win32'",
-    "flatpak-pip-generator>=26.3.11; sys.platform == 'linux'",
-]
 
 [tool.ruff.lint.flake8-implicit-str-concat]
 allow-multiline = false
