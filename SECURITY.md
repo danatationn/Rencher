@@ -1,1 +1,0 @@
-if you spot a vulnerability either open an issue or pm me somewhere

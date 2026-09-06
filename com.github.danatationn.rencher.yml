@@ -1,3 +1,5 @@
+# `flatpak_pip_generator requests watchdog rarfile pypresence rich pygments uuid7 --ignore-installed pygments`
+
 app-id: com.github.danatationn.rencher
 runtime: org.gnome.Platform
 runtime-version: '49'
