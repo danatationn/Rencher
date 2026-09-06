@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, override
 
 from gi.repository import Adw, GLib, Gtk
 
-from rencher.gtk.utils import open_file_manager
+from rencher.gtk.utils import gtk_template_callback, gtk_template_child, open_file_manager
 from rencher.renpy.config import RencherConfig
 from rencher.renpy.paths import local_path
 
@@ -17,20 +17,20 @@ if TYPE_CHECKING:
 class SettingsDialog(Adw.PreferencesDialog):
     __gtype_name__: str = 'SettingsDialog'
 
-    window: 'MainWindow'
+    window: MainWindow
     config: RencherConfig
 
-    data_dir_entry: Adw.EntryRow = Gtk.Template.Child()
-    updates_switch: Adw.SwitchRow = Gtk.Template.Child()
-    delete_import_switch: Adw.SwitchRow = Gtk.Template.Child()
-    skip_splash_scr_switch: Adw.SwitchRow = Gtk.Template.Child()
-    skip_main_menu_switch: Adw.SwitchRow = Gtk.Template.Child()
-    forced_save_dir_switch: Adw.SwitchRow = Gtk.Template.Child()
-    windowficate_switch: Adw.SwitchRow = Gtk.Template.Child()
-    discord_rpc_switch: Adw.SwitchRow = Gtk.Template.Child()
+    data_dir_entry: Adw.EntryRow = gtk_template_child()
+    updates_switch: Adw.SwitchRow = gtk_template_child()
+    delete_import_switch: Adw.SwitchRow = gtk_template_child()
+    skip_splash_scr_switch: Adw.SwitchRow = gtk_template_child()
+    skip_main_menu_switch: Adw.SwitchRow = gtk_template_child()
+    forced_save_dir_switch: Adw.SwitchRow = gtk_template_child()
+    windowficate_switch: Adw.SwitchRow = gtk_template_child()
+    discord_rpc_switch: Adw.SwitchRow = gtk_template_child()
     switches_list: list[tuple[Adw.SwitchRow, str]]
 
-    def __init__(self, window: 'MainWindow', *args, **kwargs):
+    def __init__(self, window: MainWindow, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.switches_list = [
@@ -76,15 +76,15 @@ class SettingsDialog(Adw.PreferencesDialog):
 
         self.config.write()
 
-        if self.config['settings']['data_dir'] != old_data_dir:
-            self.window.library.load_games()
+        # if self.config['settings']['data_dir'] != old_data_dir:
+        self.window.library.load_games()
 
-    @Gtk.Template.Callback()
+    @gtk_template_callback
     def on_picker_clicked(self, _widget: Gtk.Button):
         dialog = Gtk.FileDialog()
         dialog.select_folder(self.window, None, self.on_folder_selected)
 
-    @Gtk.Template.Callback()
+    @gtk_template_callback
     def on_dir_clicked(self, _):
         data_dir = self.data_dir_entry.get_text()
         open_file_manager(data_dir)
@@ -98,17 +98,17 @@ class SettingsDialog(Adw.PreferencesDialog):
             path = folder.get_path()
             self.data_dir_entry.set_text(path if path else '')
 
-    @Gtk.Template.Callback()
+    @gtk_template_callback
     def on_check_updates(self, _):
         thread = threading.Thread(target=lambda: self.window.app.check_version(show_up_to_date_toast=True))
         thread.start()
         self.close()
 
-    @Gtk.Template.Callback()
+    @gtk_template_callback
     def on_reset_data_dir(self, _widget: Adw.ButtonRow):  # type: ignore
         self.data_dir_entry.set_text(str(local_path))
 
-    @Gtk.Template.Callback()
+    @gtk_template_callback
     def on_delete_games(self, _widget: Adw.ButtonRow):  # type: ignore
         dialog = Adw.AlertDialog(
             heading='Are you sure?',

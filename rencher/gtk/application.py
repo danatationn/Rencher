@@ -109,8 +109,9 @@ class MainApplication(Adw.Application):
 
     def on_show_shortcuts(self, *_):
         builder = Gtk.Builder.new_from_resource('/com/github/danatationn/rencher/ui/shortcuts.ui')
-        dialog: Adw.ShortcutsDialog = builder.get_object('RencherShortcuts')
-        dialog.present(self.window)
+        # why aren't stubs updated yet
+        dialog: Adw.ShortcutsDialog = builder.get_object('RencherShortcuts')  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType]
+        dialog.present(self.window)  # pyright: ignore[reportUnknownMemberType]
 
     @override
     def do_shutdown(self) -> None:
@@ -140,8 +141,9 @@ class MainApplication(Adw.Application):
             debug_info=debug_info,
             debug_info_filename='log.txt',
             release_notes="""<ul>
-                <li> Fixed Logs row not collapsing after starting a new game </li>
-                <li> Fixed "Delete Files on Import" not working with archives </li>
+                <li>Fixed log dialog appearing when stopping a game early</li>
+                <li>Completely reworked the tasks system</li>
+                <li>Removed file monitoring</li>
             </ul>""",
             release_notes_version=rencher.__version__,
         )

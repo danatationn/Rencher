@@ -294,9 +294,6 @@ class Game:
         else:
             raise FileNotFoundError(f'{self.rpath.name} has no .py files!')
     @property
-    def is_valid(self):
-        return self.validate()
-    @property
     def is_launchable(self) -> bool:
         if self.get_main_script():
             return True

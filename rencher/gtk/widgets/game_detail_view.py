@@ -1,13 +1,14 @@
 import subprocess
 import threading
 import time
+from gettext import gettext as _
 from typing import IO
 
 from gi.repository import Adw, GLib, GObject, Gtk
 
 from rencher.gtk.game_entry import GameEntry
 from rencher.gtk.rpc import Rpc
-from rencher.gtk.utils import open_file_manager
+from rencher.gtk.utils import gtk_template_callback, gtk_template_child, open_file_manager
 from rencher.gtk.widgets.options_dialog import OptionsDialog
 
 
@@ -15,32 +16,34 @@ from rencher.gtk.widgets.options_dialog import OptionsDialog
 class GameDetailView(Gtk.Box):
     __gtype_name__: str = 'GameDetailView'
 
-    title_status_page: Adw.StatusPage = Gtk.Template.Child()
-    last_played_row: Adw.ActionRow = Gtk.Template.Child()
-    playtime_row: Adw.ActionRow = Gtk.Template.Child()
-    added_on_row: Adw.ActionRow = Gtk.Template.Child()
-    rpath_row: Adw.ActionRow = Gtk.Template.Child()
-    version_row: Adw.ActionRow = Gtk.Template.Child()
-    codename_row: Adw.ActionRow = Gtk.Template.Child()
-    log_row: Adw.ExpanderRow = Gtk.Template.Child()
-    log_text_view: Gtk.TextView = Gtk.Template.Child()
+    title_status_page: Adw.StatusPage = gtk_template_child()
+    last_played_row: Adw.ActionRow = gtk_template_child()
+    playtime_row: Adw.ActionRow = gtk_template_child()
+    added_on_row: Adw.ActionRow = gtk_template_child()
+    rpath_row: Adw.ActionRow = gtk_template_child()
+    version_row: Adw.ActionRow = gtk_template_child()
+    codename_row: Adw.ActionRow = gtk_template_child()
+    log_row: Adw.ExpanderRow = gtk_template_child()
+    log_text_view: Gtk.TextView = gtk_template_child()
 
     entry: GameEntry
     rpc: Rpc
+    row: Adw.ActionRow | Gtk.ListBoxRow
     log_buf: Gtk.TextBuffer
 
     game_process: subprocess.Popen[bytes] | None
     process_time: float
     is_terminating: bool
 
-    play_button: Gtk.Button = Gtk.Template.Child()
+    play_button: Gtk.Button = gtk_template_child()
     error_dialog: Adw.AlertDialog | None
-    options_button: Gtk.Button = Gtk.Template.Child()
+    options_button: Gtk.Button = gtk_template_child()
 
-    def __init__(self, entry: GameEntry, rpc: Rpc, **kwargs):
+    def __init__(self, entry: GameEntry, rpc: Rpc, row: Adw.ActionRow | Gtk.ListBoxRow, **kwargs):
         super().__init__(**kwargs)
         self.entry = entry
         self.rpc = rpc
+        self.row = row
         self.log_buf = self.log_text_view.get_buffer()
 
         self.process_time = -1.0
@@ -60,16 +63,16 @@ class GameDetailView(Gtk.Box):
         self.entry.bind_property('codename', self.codename_row, 'subtitle', GObject.BindingFlags.SYNC_CREATE)
 
         self.log_buf = self.log_text_view.get_buffer()
-        self.log_buf.create_tag("stderr", foreground="orange")
+        self.log_buf.create_tag('stderr', foreground='orange')
         self.log_buf.connect('changed', lambda b: self.log_row.set_sensitive(b.get_char_count() > 0))
 
         GLib.timeout_add(250, self.check_process)
 
-    @Gtk.Template.Callback()
+    @gtk_template_callback
     def on_play_clicked(self, play_button: Gtk.Button) -> None:
         if not self.entry.game.is_launchable:
             alert = Adw.AlertDialog(heading='Error', body='This game has no valid executables!')
-            alert.add_response('ok', 'OK')
+            alert.add_response('ok', _('OK'))
             alert.choose(self)
             return
 
@@ -77,8 +80,8 @@ class GameDetailView(Gtk.Box):
             try:
                 self.game_process = self.entry.game.run()
             except PermissionError:
-                alert = Adw.AlertDialog(heading='Error', body='This game\'s executable is not executable!')
-                alert.add_response('ok', 'OK')
+                alert = Adw.AlertDialog(heading=_('Error'), body=_('This game\'s executable is not executable!'))
+                alert.add_response('ok', _('OK'))
                 alert.choose(self)
             else:
                 self.log_row.set_expanded(False)
@@ -89,7 +92,7 @@ class GameDetailView(Gtk.Box):
                 self.check_process()  # so the button changes instantly
         else:
             if self.game_process:
-                self.play_button.set_label('Stopping')
+                self.play_button.set_label(_('Stopping'))
                 self.is_terminating = True
                 self.game_process.terminate()
 
@@ -99,7 +102,7 @@ class GameDetailView(Gtk.Box):
 
     def _on_log_line(self, line: str, is_stderr: bool) -> None:
         if is_stderr:
-            self.log_buf.insert_with_tags_by_name(self.log_buf.get_end_iter(), line, "stderr")
+            self.log_buf.insert_with_tags_by_name(self.log_buf.get_end_iter(), line, 'stderr')
         else:
             self.log_buf.insert(self.log_buf.get_end_iter(), line)
         self.log_text_view.scroll_to_iter(self.log_buf.get_end_iter(), 0, False, 0, 0)
@@ -116,11 +119,11 @@ class GameDetailView(Gtk.Box):
             adj = scrolled_window.get_vadjustment()
             adj.set_value(adj.get_upper() - adj.get_page_size())
 
-    @Gtk.Template.Callback()
+    @gtk_template_callback
     def on_dir_clicked(self, _widget: Gtk.Button) -> None:
         open_file_manager(self.entry.apath)
 
-    @Gtk.Template.Callback()
+    @gtk_template_callback
     def on_options_clicked(self, _widget: Gtk.Button):
         # TODO info used to get changed via filemonitor. think of a way to update gamedetailview info
         options_dialog = OptionsDialog(self.entry)
@@ -129,7 +132,7 @@ class GameDetailView(Gtk.Box):
     def check_process(self) -> bool:
         if not self.game_process or self.game_process.poll() is not None:
             # game not launched yet / game stopped
-            self.play_button.set_label('Play')
+            self.play_button.set_label(_('Play'))
             self.play_button.get_style_context().remove_class('destructive-action')
             self.play_button.get_style_context().add_class('suggested-action')
             # self.options_button.set_sensitive(True)
@@ -146,27 +149,28 @@ class GameDetailView(Gtk.Box):
             if self.process_time and isinstance(playtime, float):
                 playtime += time.time() - self.process_time
                 self.entry.game.cleanup(playtime)
+                self.entry.refresh()
 
             # non-zero exit codes are errors. if you didn't know. a lot of people don't know this
             # TODO check if logs is empty
-            if self.game_process.returncode != 0:
+            if self.game_process.returncode != 0 and self.log_row.is_sensitive():
                 self.error_dialog = Adw.AlertDialog(
-                    heading='Something went wrong!',
-                    body='A game has errors. Check the logs for more details.',
+                    heading=_('Something went wrong!'),
+                    body=_('A game has errors. Check the logs for more details.'),
                     default_response='show',
                     close_response='cancel',
                 )
-                self.error_dialog.add_response('show', 'Show Logs')
-                self.error_dialog.add_response('cancel', 'Cancel')
+                self.error_dialog.add_response('show', _('Show Logs'))
+                self.error_dialog.add_response('cancel', _('Cancel'))
                 self.error_dialog.connect('response', self._on_error_dialog_response)
                 GLib.idle_add(self.error_dialog.present, self)
 
             self.game_process = None
         else:
             if self.is_terminating:
-                self.play_button.set_label('Stopping')
+                self.play_button.set_label(_('Stopping'))
             else:
-                self.play_button.set_label('Stop')
+                self.play_button.set_label(_('Stop'))
                 if self.game_process and self.entry.game.config['overwritten']['discord_rpc'] == 'true':
                     self.rpc.update(state=self.entry.name)
             self.play_button.get_style_context().remove_class('suggested-action')

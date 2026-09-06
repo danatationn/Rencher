@@ -1,6 +1,8 @@
 import logging
 import subprocess
-from typing import override
+from collections.abc import Callable
+from pathlib import Path
+from typing import TYPE_CHECKING, override
 
 from gi.repository import GLib, GObject
 
@@ -47,14 +49,24 @@ class GameEntry(GObject.Object):
     __gtype_name__: str = 'GameEntry'
     _game: Game
     _process: subprocess.Popen[bytes] | None
-    name: GObject.Property = GObject.Property(type=str, default='N/A')
-    rpath: GObject.Property = GObject.Property(type=str, default='N/A')
-    apath: GObject.Property = GObject.Property(type=str, default='N/A')
-    last_played: GObject.Property = GObject.Property(type=str, default='Never')
-    playtime: GObject.Property = GObject.Property(type=str, default='N/A')
-    added_on: GObject.Property = GObject.Property(type=str, default='N/A')
-    version: GObject.Property = GObject.Property(type=str, default='N/A')
-    codename: GObject.Property = GObject.Property(type=str, default='N/A')
+    if TYPE_CHECKING:
+        name: str = 'N/A'
+        rpath: str = 'N/A'
+        apath: str = 'N/A'
+        last_played: str = 'Never'
+        playtime: str = 'N/A'
+        added_on: str = 'N/A'
+        version: str = 'N/A'
+        codename: str = 'N/A'
+    else:
+        name: GObject.Property = GObject.Property(type=str, default='N/A')
+        rpath: GObject.Property = GObject.Property(type=str, default='N/A')
+        apath: GObject.Property = GObject.Property(type=str, default='N/A')
+        last_played: GObject.Property = GObject.Property(type=str, default='Never')
+        playtime: GObject.Property = GObject.Property(type=str, default='N/A')
+        added_on: GObject.Property = GObject.Property(type=str, default='N/A')
+        version: GObject.Property = GObject.Property(type=str, default='N/A')
+        codename: GObject.Property = GObject.Property(type=str, default='N/A')
 
     def __init__(self, rpath: str | None = None, game: Game | None = None):
         super().__init__()
@@ -70,7 +82,7 @@ class GameEntry(GObject.Object):
 
         if game:
             self._game = game
-            self.refresh(game)
+            self.update(game)
 
     @override
     def __eq__(self, other: object):
@@ -88,10 +100,13 @@ class GameEntry(GObject.Object):
         self._process = process
         return process
 
-    def refresh(self, game: Game) -> None:
+    def refresh(self) -> None:
+        self.update(self.game)
+
+    def update(self, game: Game) -> None:
         game.config.read()
 
-        property_map: dict[str, object] = {
+        property_map: dict[str, Callable[[], str | float | bool | None | Path]] = {
             'name': lambda: game.name,
             'rpath': lambda: game.rpath,
             'apath': lambda: game.apath,
@@ -104,18 +119,23 @@ class GameEntry(GObject.Object):
 
         for prop, getter in property_map.items():
             try:
-                value = getter()  # pyright: ignore[reportCallIssue, reportUnknownVariableType]
-                if prop in ['last_played', 'added_on']:
-                    value = format_date(value)
-                elif prop == 'playtime':
-                    value = format_playtime(value)
+                value = getter()
+                if isinstance(value, float):
+                    if prop in ['last_played', 'added_on']:
+                        value = format_date(value)
+                    elif prop == 'playtime':
+                        value = format_playtime(value)
 
-                setattr(self, prop, value if value else 'N/A')
+                # setattr(self, prop, value if value else 'N/A')
+                if prop == 'name':
+                    setattr(self, prop, value if value else game.rpath.name)
+                else:
+                    setattr(self, prop, value if value else 'N/A')
             except Exception as e:
                 setattr(self, prop, 'Error!')
                 logging.warning(f'Couldn\'t set {prop}. {e}')
 
-    # i need to add all the other properties
+    # TODO i need to add all the other properties
 
     @property
     def game(self) -> Game:
@@ -123,16 +143,16 @@ class GameEntry(GObject.Object):
     @game.setter
     def game(self, value: Game) -> None:
         self._game = value
-        self.refresh(value)
+        self.update(value)
     @property
-    def is_mod(self) -> bool | None:
+    def is_mod(self) -> bool:
         return self._game.is_mod
     @property
-    def is_valid(self) -> bool | None:
-        return self._game.is_valid
-    @property
-    def is_launchable(self) -> bool | None:
+    def is_launchable(self) -> bool:
         return self._game.is_launchable
+    @property
+    def has_nickname(self) -> bool:
+        return self._game.config.get_value('nickname') != ''
     @property
     def process(self) -> subprocess.Popen[bytes] | None:
         return self._process

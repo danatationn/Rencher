@@ -1,20 +1,32 @@
+import logging
 import os.path
+from pathlib import Path
 import platform
 import subprocess
+import typing
 
 import gi
 
 gi.require_version('Gtk', '4.0')
-from gi.repository import Gio  # noqa: E402
+from gi.repository import Gio, GLib, Gtk  # noqa: E402
 
+
+def gtk_template_callback[F: typing.Callable[..., typing.Any]](func: F) -> F:
+    return typing.cast(F, Gtk.Template.Callback()(func))
+
+def gtk_template_child[T](name: str | None = None) -> T:  # pyright: ignore[reportInvalidTypeVarUse]
+    return typing.cast(T, Gtk.Template.Child(name=name))
 
 def open_file_manager(path: str):
     if platform.system() == 'Linux':
-        Gio.AppInfo.launch_default_for_uri('file://' + path)
+        try:
+            Gio.AppInfo.launch_default_for_uri('file://' + path)
+        except GLib.Error as e:
+            logging.error(f'Couldn\'t open {path}. ({e})')
     elif platform.system() == 'Windows':
         subprocess.run(['explorer', path.replace('/', '\\')])
 
-def windowficate_path(path: str) -> str:
+def windowficate_path(path: Path) -> Path:
     """
     returns a file that abides by the Windows file naming conventions
 
@@ -28,9 +40,8 @@ def windowficate_path(path: str) -> str:
                        'COM9', 'COM¹', 'COM²', 'COM³', 'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8',
                        'LPT9', 'LPT¹', 'LPT²', 'LPT³']
 
-    name = os.path.basename(path)
-    new_name = ''
-    for char in name:
+    new_name: str = ''
+    for char in path.name:
         if char in forbidden_chars:
             new_name += '_'
         else:
@@ -38,5 +49,4 @@ def windowficate_path(path: str) -> str:
     if new_name in forbidden_names:
         new_name = 'game'
 
-    parent = os.path.dirname(path)
-    return os.path.join(parent, new_name)
+    return path.parent / new_name

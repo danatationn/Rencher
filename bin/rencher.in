@@ -54,6 +54,8 @@ def launch() -> None:
 
     try:
         app.run(sys.argv)
+    except KeyboardInterrupt:
+        ...
     except Exception as err:
         if err.__traceback__:
             handle_global_exception(type(err), err, err.__traceback__)

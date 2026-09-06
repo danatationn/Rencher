@@ -4,6 +4,7 @@ import threading
 from typing import Any
 
 from pypresence.presence import AioPresence
+from pypresence.exceptions import DiscordNotFound
 
 TIMEOUT_SECS = 1
 
@@ -43,6 +44,9 @@ class Rpc:
             await self._presence.connect()
             logging.info('RPC connected')
             return True
+        except DiscordNotFound:
+            # TODO make it so it prints the error once . use the variables above
+            return False
         except Exception as e:
             self._presence = None
             logging.error(e)
@@ -80,6 +84,7 @@ class Rpc:
         self._thread.start()
 
     def update(self, **kwargs) -> None:
+
         if kwargs != self._current_state:
             self._current_state = kwargs
             self._state_changed = True

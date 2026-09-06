@@ -4,6 +4,8 @@ using Adw 1;
 template $ImportDialog: Adw.Dialog {
 	title: _("Import");
 	content-width: 600;
+	// TODO make it stretch . when the banner comes down it squishes the content .
+	// i've had this issue in the past
 	// follows-content-size: true;
 
 	child: Adw.ToolbarView {
@@ -12,15 +14,30 @@ template $ImportDialog: Adw.Dialog {
 		[top]
 		Adw.HeaderBar {}
 
+		[top]
+		Adw.Banner validation_banner {}
+
 		content: Adw.PreferencesPage {
 			Adw.PreferencesGroup {
 				Adw.EntryRow title_entry {
 					title: _("Title");
 				}
 
-				Adw.ComboRow type_combo {
+				Adw.ActionRow type_combo {
 					title: _("Type");
-					notify::selected-item => $on_type_changed();
+					Adw.ToggleGroup {
+    					notify::active => $on_type_changed();
+					    Adw.Toggle {
+							icon-name: "file-cabinet-symbolic";
+							label: _("Archive");
+						}
+						Adw.Toggle {
+						    icon-name: "folder-open-symbolic";
+						    label: _("Folder");
+						}
+
+						valign: center;
+					}
 				}
 
 				Adw.EntryRow location_entry {
@@ -43,11 +60,9 @@ template $ImportDialog: Adw.Dialog {
 
 			Adw.PreferencesGroup {
 				Adw.ComboRow game_combo {
-				    title: _("Mod Game");
+				    title: _("Target Game");
 					enable-search: true;
 
-				    // [prefix]
-					// TODO figure out a way to show this after the title and before the combo
 					Image {
     					valign: center;
                         width-request: 34;
@@ -63,6 +78,7 @@ template $ImportDialog: Adw.Dialog {
 					title: _("Import");
 					sensitive: false;
 					activated => $on_import_clicked();
+					// action-name: "library.import-game";
 				}
 			}
 		};

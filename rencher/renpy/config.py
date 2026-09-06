@@ -19,6 +19,7 @@ class GameConfig(ConfigParser):
             'playtime': 0.0,
             'added_on': 0.0,
             'codename': '',
+            # TODO 'is_mod': '',
         },
         'options': {
             'skip_splash_scr': '',

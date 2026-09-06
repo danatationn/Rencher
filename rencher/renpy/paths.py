@@ -69,7 +69,7 @@ def get_absolute_path(rpath: Path | str) -> Path | None:
         return rpa_path.parent
     return None
 
-def validate_game_files(files: list[str]) -> bool:
+def validate_game_files(files: list[str] | list[Path]) -> bool:
     """
     a quick validation function, to be used before importing games
 
@@ -93,7 +93,12 @@ def validate_game_files(files: list[str]) -> bool:
     if not game_files:
         return False
 
-    rpa_path = min(game_files, key=lambda path: len(path.split(os.sep)))
+    def path_length(path: str | Path) -> int:
+        if isinstance(path, Path):
+            return len(path.parts)
+        return len(path.split(os.sep))
+
+    rpa_path = min(game_files, key=path_length)
     apath = os.path.abspath(os.path.join(rpa_path, '..', '..'))
     rel_files = [os.path.relpath(file, apath) for file in files]
 
