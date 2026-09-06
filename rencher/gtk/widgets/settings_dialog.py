@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 class SettingsDialog(Adw.PreferencesDialog):
     __gtype_name__: str = 'SettingsDialog'
 
-    window: MainWindow
+    window: 'MainWindow'
     config: RencherConfig
 
     data_dir_entry: Adw.EntryRow = gtk_template_child()
@@ -30,7 +30,7 @@ class SettingsDialog(Adw.PreferencesDialog):
     discord_rpc_switch: Adw.SwitchRow = gtk_template_child()
     switches_list: list[tuple[Adw.SwitchRow, str]]
 
-    def __init__(self, window: MainWindow, *args, **kwargs):
+    def __init__(self, window: 'MainWindow', *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.switches_list = [

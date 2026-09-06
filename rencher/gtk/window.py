@@ -1,12 +1,11 @@
 from enum import Enum
-import logging
 from typing import TYPE_CHECKING
 
 from gi.repository import Adw, GLib, Gtk
 
 from rencher.gtk.game_entry import GameEntry
 from rencher.gtk.library import Library
-from rencher.gtk.tasks import ImportGameTask, RencherTask
+from rencher.gtk.tasks import RencherTask
 from rencher.gtk.utils import gtk_template_callback, gtk_template_child
 from rencher.gtk.widgets.codename_dialog import RencherCodename
 from rencher.gtk.widgets.game_detail_view import GameDetailView
@@ -38,7 +37,7 @@ class MainWindow(Adw.ApplicationWindow):
     ascending_order: bool
 
     # classes
-    app: MainApplication
+    app: 'MainApplication'
     settings_dialog: SettingsDialog
     import_dialog: ImportDialog
     codename_dialog: RencherCodename

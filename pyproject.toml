@@ -60,6 +60,7 @@ extend-select = [
     "B",
     "COM",
 ]
+ignore = ["UP037"]
 
 [tool.ruff.format]
 quote-style = "single"

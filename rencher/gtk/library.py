@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 class Library(GObject.Object):
-    window: MainWindow
+    window: 'MainWindow'
     store: Gio.ListStore
 
     # signal name: flags, arguments, returns
@@ -29,7 +29,7 @@ class Library(GObject.Object):
         'message': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
     }
 
-    def __init__(self, window: MainWindow):
+    def __init__(self, window: 'MainWindow'):
         super().__init__()
         self.window = window
         self.store = Gio.ListStore(item_type=GameEntry)

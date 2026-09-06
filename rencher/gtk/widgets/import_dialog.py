@@ -33,7 +33,7 @@ class ImportDialog(Adw.Dialog):
     import_button: Adw.ActionRow = gtk_template_child()
     validation_banner: Adw.Banner = gtk_template_child()
 
-    window: MainWindow
+    window: 'MainWindow'
     thread: threading.Thread
     cancel_flag: threading.Event
     has_imported: bool
@@ -42,7 +42,7 @@ class ImportDialog(Adw.Dialog):
     archive_location: str
     folder_location: str
 
-    def __init__(self, window: MainWindow, *args, **kwargs):
+    def __init__(self, window: 'MainWindow', *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.selected_type = ImportTypeEnum.ARCHIVE
