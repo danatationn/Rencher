@@ -116,7 +116,7 @@ jobs:
       - name: Freeze Rencher
         id: freeze
         run: |
-          python build-aux/freeze.py build/root/
+          ninja -C build freeze
           FREEZE_DIR=$(python -c "import sysconfig; print(f'exe.{sysconfig.get_platform()}-{sysconfig.get_python_version()}')")
           echo "FREEZE_DIR=$FREEZE_DIR" >> $GITHUB_OUTPUT
 

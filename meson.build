@@ -66,9 +66,14 @@ if host_machine.system() == 'windows'
     nsi = configure_file(
         input: 'build-aux' / 'windows' / 'build_installer.nsi.in',
         output: 'build_installer.nsi',
-        configuration: conf
+        configuration: conf,
     )
 
-    run_target('freeze', command: ['build-aux' / 'freeze.py', get_option('prefix'), meson.project_build_root()])
+    run_target('freeze', command: [
+    	python_install,
+    	meson.project_source_root() / 'build-aux' / 'freeze.py',
+     	get_option('prefix'),
+      meson.project_build_root()
+    ])
     run_target('makensis', command: ['makensis', nsi])
 endif

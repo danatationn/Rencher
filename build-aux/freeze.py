@@ -2,8 +2,6 @@
 """
 HEAVILY inspired by the Nicotine+ cxfreeze script:
 https://github.com/nicotine-plus/nicotine-plus/blob/master/build-aux/windows/setup.py
-
-TODO stop trying to 
 """
 
 import os
@@ -14,7 +12,7 @@ import sysconfig
 import tempfile
 from pathlib import Path
 
-from cx_Freeze import Executable, setup
+from cx_Freeze import Executable, setup  # pyright: ignore[reportMissingImports, reportUnknownVariableType]
 
 if platform.system() != 'Windows':
     raise NotImplementedError('Freezing is only supported on Windows!')
@@ -50,6 +48,15 @@ lib_ext = '.dll'
 pkgconf_path = shutil.which('pkg-config')
 if not pkgconf_path:
     raise FileNotFoundError('pkg-config was not found in path (not installed?)')
+
+project_root: Path | None = None
+# TODO make func
+for path in Path(__file__).parents:
+	if Path(path / 'pyproject.toml').is_file():
+		project_root = path
+if not project_root:
+	print('Couldn\'t find project root!')
+	sys.exit(1)
 
 
 def freeze(argv: list[str]):
@@ -95,13 +102,13 @@ def freeze(argv: list[str]):
     if len(argv) > 2:
         dest_dir = Path(argv[2])
     else:
-        dest_dir = Path(__file__).parent / 'build'
-    icon_path = Path(__file__).parent / 'data' / 'assets' / 'rencher-icon.ico'
+        dest_dir = project_root / 'build'
+    icon_path = project_root / 'data' / 'assets' / 'rencher-icon.ico'
     # setup() requires the first argument to be 'build'
     sys.argv = [argv[0], 'build']
 
     # the script should look inside of venv even when outside of it (for ci)
-    if (venv_path := Path('.venv')).is_dir():
+    if (venv_path := project_root / '.venv').is_dir():
         sys.path.insert(0, str(venv_path / 'Lib' / 'site-packages'))
 
     setup(
