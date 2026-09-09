@@ -24,6 +24,7 @@ from rencher.renpy.paths import local_path  # noqa: E402
 class MainApplication(Adw.Application):
     config: ConfigParser
     window: MainWindow
+    action_info: list[tuple[str, Callable[[Gio.SimpleAction, GLib.Variant | None], None], list[str]]]
     simple_actions: dict[str, Gio.SimpleAction]
 
     rpc: Rpc
@@ -58,7 +59,7 @@ class MainApplication(Adw.Application):
         urllib3_logger = logging.getLogger('urllib3')
         urllib3_logger.setLevel(logging.WARNING)
 
-        actions: list[tuple[str, Callable[[Gio.SimpleAction, GLib.Variant | None], None], list[str]]] = [
+        self.action_info = [
             ('show-import', self.on_show_import, ['<Primary>plus']),
             ('show-preferences', self.on_show_preferences, ['<Primary>comma']),
             ('show-shortcuts', self.on_show_shortcuts, ['<Primary>question']),
@@ -68,13 +69,13 @@ class MainApplication(Adw.Application):
         ]
         self.simple_actions = {}
 
-        for name, callback, accels in actions:
-            simple_action = Gio.SimpleAction.new(name, None)
+        for id, callback, accels in self.action_info:
+            simple_action = Gio.SimpleAction.new(id, None)
             simple_action.connect('activate', callback)
             self.add_action(simple_action)
-            self.simple_actions[name] = simple_action
+            self.simple_actions[id] = simple_action
             if accels:
-                self.set_accels_for_action(f'app.{name}', accels)
+                self.set_accels_for_action(f'app.{id}', accels)
 
         self.rpc = Rpc(1485229562123124818)
         self.rpc.start()
@@ -99,6 +100,9 @@ class MainApplication(Adw.Application):
         self.config = RencherConfig()
         self.window = MainWindow(application=self)
         self.window.present()
+
+        if os.environ.get('MESON_BUILD_ROOT', None):
+            self.window.add_css_class('devel')
 
         event_controller_key = Gtk.EventControllerKey.new()
         event_controller_key.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
@@ -235,7 +239,6 @@ class MainApplication(Adw.Application):
                 toast.set_title(f"You're up to date! (v{local_version_str})")
             else:
                 toast.set_title(f"You're bleeding-edge! (v{local_version_str})")
-                self.window.add_css_class('devel')
 
             if show_up_to_date_toast:
                 GLib.idle_add(self.window.toast_overlay.add_toast, toast)

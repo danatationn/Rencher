@@ -49,15 +49,6 @@ pkgconf_path = shutil.which('pkg-config')
 if not pkgconf_path:
     raise FileNotFoundError('pkg-config was not found in path (not installed?)')
 
-project_root: Path | None = None
-# TODO make func
-for path in Path(__file__).parents:
-	if Path(path / 'pyproject.toml').is_file():
-		project_root = path
-if not project_root:
-	print('Couldn\'t find project root!')
-	sys.exit(1)
-
 
 def freeze(argv: list[str]):
     include_files: list[tuple[Path, Path]] = []
@@ -97,6 +88,14 @@ def freeze(argv: list[str]):
 
     for prefix in TYPELIB_PREFIXES:
         include_files.extend(find_files(f'{prefix}*.typelib', base_prefix / 'lib' / 'girepository-1.0'))
+
+    project_root: Path | None = None
+    for path in Path(__file__).parents:
+        if Path(path / 'pyproject.toml').is_file():
+            project_root = path
+    if not project_root:
+        print('ERROR: Couldn\'t find project root!')
+        sys.exit(1)
 
     build_dir = Path(argv[1], 'bin', 'rencher')
     if len(argv) > 2:
@@ -139,7 +138,6 @@ def freeze(argv: list[str]):
     shutil.rmtree(tmp_dir)
     dir_name = f'exe.{sysconfig.get_platform()}-{sysconfig.get_python_version()}'
     print(f'Your frozen app is at "{dest_dir / dir_name}"')
-
 
 def find_files(
     pattern: str,
