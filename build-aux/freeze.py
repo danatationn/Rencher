@@ -71,7 +71,6 @@ def freeze(argv: list[str]):
 
     loaders_dir = base_prefix / 'lib' / 'gdk-pixbuf-2.0' / '2.10.0'
     pixbuf_path = loaders_dir / 'loaders.cache'
-    adw_icon_dir = base_prefix / 'share' / 'icons' / 'Adwaita'
 
     tmp_dir = Path(tempfile.mkdtemp())
     tmp_pixbuf_path = tmp_dir / 'loaders.cache'
@@ -103,7 +102,7 @@ def freeze(argv: list[str]):
 
     # the script should look inside of venv even when outside of it (for ci)
     if (venv_path := Path('.venv')).is_dir():
-        sys.path.insert(0, venv_path / 'Lib' / 'site-packages')
+        sys.path.insert(0, str(venv_path / 'Lib' / 'site-packages'))
 
     setup(
         name='Rencher',

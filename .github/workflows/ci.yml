@@ -12,7 +12,7 @@ jobs:
       image: ubuntu:25.10
       options: --privileged
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install packages
         env:
           DEBIAN_FRONTEND: noninteractive
@@ -37,7 +37,7 @@ jobs:
           pip install uv --break-system-packages
 
       - name: Cache uv
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/uv
           key: uv-${{ runner.os }}
@@ -49,7 +49,7 @@ jobs:
           ninja -C build install
 
       - name: Cache Flatpak runtimes
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
               /var/lib/flatpak
@@ -60,14 +60,14 @@ jobs:
         run: |
           flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo --system
           flatpak install org.gnome.Sdk//49 org.gnome.Platform//49 --system -y --no-related
-          flatpak-builder --install --user build/flatpak com.github.danatationn.rencher.yml
+          flatpak-builder --install --user build/flatpak build-aux/flatpak/com.github.danatationn.rencher.yml
           flatpak build-bundle ~/.local/share/flatpak/repo build/Rencher.flatpak com.github.danatationn.rencher
 
       - name: Upload Flatpak artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: Rencher-Linux-Flatpak
           path: build/Rencher.flatpak
+          archive: false
 
   windows-job:
     name: Windows
@@ -77,7 +77,7 @@ jobs:
         shell: msys2 {0}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
       - name: MSYS2
         uses: msys2/setup-msys2@v2
         with:
@@ -102,7 +102,7 @@ jobs:
         run: echo "path=$(uv cache dir)" >> $GITHUB_OUTPUT
 
       - name: Cache uv
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ steps.uv-cache.outputs.path }}
           key: uv-${{ runner.os }}
@@ -116,12 +116,12 @@ jobs:
       - name: Freeze Rencher
         id: freeze
         run: |
-          python freeze.py build/root/
+          python build-aux/freeze.py build/root/
           FREEZE_DIR=$(python -c "import sysconfig; print(f'exe.{sysconfig.get_platform()}-{sysconfig.get_python_version()}')")
           echo "FREEZE_DIR=$FREEZE_DIR" >> $GITHUB_OUTPUT
 
       - name: Upload frozen files artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Rencher-Windows-Portable
           path: build/${{ steps.freeze.outputs.FREEZE_DIR }}
@@ -130,7 +130,7 @@ jobs:
         run: ninja -C build makensis
 
       - name: Upload NSIS installer artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: Rencher-Windows-Installer
           path: build/RencherInstaller.exe
+          archive: false

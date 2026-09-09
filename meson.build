@@ -9,13 +9,18 @@ python_install = python.find_installation()
 gnome = import('gnome')
 
 # conf
+pkgdata_dir = join_paths(
+	get_option('prefix'),
+	get_option('datadir'),
+	meson.project_name()
+)
 conf = configuration_data()
 conf.set('name', name)
 conf.set('project_name', meson.project_name())
 conf.set('version', meson.project_version())
 conf.set('copyright', '© 2026 danatationn')
 conf.set('app_id', app_id)
-conf.set('pkgdata_dir', get_option('prefix') / get_option('datadir') / meson.project_name())
+conf.set('pkgdata_dir', pkgdata_dir)
 conf.set('description', description)
 conf.set('bin_dir', get_option('prefix') / get_option('bindir'))
 conf.set('python_dir', get_option('prefix') / python_install.get_install_dir())
@@ -36,6 +41,7 @@ configure_file(
 	input: meson.project_name() + '.in',
 	output: meson.project_name(),
 	configuration: conf,
+	# install: true,
 	install_dir: get_option('bindir'),
 	install_mode: 'rwxr-xr-x'
 )
