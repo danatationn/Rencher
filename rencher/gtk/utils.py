@@ -1,9 +1,8 @@
 import logging
-import os.path
-from pathlib import Path
 import platform
 import subprocess
 import typing
+from pathlib import Path
 
 import gi
 

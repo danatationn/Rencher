@@ -1,5 +1,0 @@
-__version__ = '@version@'
-__description__ = "@description@"
-__url__ = 'https://github.com/danatationn/Rencher'
-__issue_url__ = 'https://github.com/danatationn/Rencher/issues'
-__copyright__ = '@copyright@'

@@ -81,7 +81,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         GLib.idle_add(self.library.load_games)
 
-    def _on_game_added(self, _, entry: GameEntry) -> None:
+    def _on_game_added(self, _library: Library, entry: GameEntry) -> None:
         row = GameRow(entry)
         self.rows[entry] = row
         self.games[row] = entry
@@ -90,10 +90,10 @@ class MainWindow(Adw.ApplicationWindow):
         if not self.library_list_box.get_selected_row():
             self.library_view_stack.set_visible_child_name('game-select')
 
-    def _on_game_changed(self, _, entry: GameEntry) -> None:
+    def _on_game_changed(self, _library: Library, entry: GameEntry) -> None:
         entry.refresh()
 
-    def _on_game_removed(self, _, entry: GameEntry) -> None:
+    def _on_game_removed(self, _library: Library, entry: GameEntry) -> None:
         row = self.rows.pop(entry, None)
         if row:
             was_selected = row == self.library_list_box.get_selected_row()
@@ -112,7 +112,7 @@ class MainWindow(Adw.ApplicationWindow):
         if self.game_views.get(entry, None):
             self.game_views.pop(entry)
 
-    def _on_task_started(self, _, task: RencherTask, entry: GameEntry | None):
+    def _on_task_started(self, _library: Library, task: RencherTask, entry: GameEntry | None):
         if entry:
             if not (row := self.rows.get(entry)):
                 row = GameRow(entry)
@@ -126,7 +126,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         row.set_task(task)
 
-    def _on_task_finished(self, _, task: RencherTask, entry: GameEntry | None) -> None:
+    def _on_task_finished(self, _library: Library, task: RencherTask, entry: GameEntry | None) -> None:
         row = self.task_rows.pop(task, None)
         if not row:
             return
@@ -138,13 +138,13 @@ class MainWindow(Adw.ApplicationWindow):
                 self.rows[entry] = row
                 self.games[row] = entry
 
-    def _on_message(self, _, text: str):
+    def _on_message(self, _task: RencherTask, text: str) -> None:
         toast = Adw.Toast.new(text)
         toast.set_timeout(3)
         self.toast_overlay.add_toast(toast)
 
     @gtk_template_callback
-    def on_import_clicked(self, *_) -> None:
+    def on_import_clicked(self, _button: Gtk.Button | None = None) -> None:
         self.import_dialog.do_show()
         self.import_dialog.present(self)
 

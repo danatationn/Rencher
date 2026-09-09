@@ -3,12 +3,10 @@ import logging
 import threading
 from typing import Any
 
-from pypresence.presence import AioPresence
 from pypresence.exceptions import DiscordNotFound
+from pypresence.presence import AioPresence
 
 TIMEOUT_SECS = 1
-
-# TODO when discord isn't open this does some really nasty spam to the console. make it not do that
 
 class Rpc:
     """
@@ -26,6 +24,8 @@ class Rpc:
     _thread: threading.Thread | None
     _loop: asyncio.AbstractEventLoop | None
 
+    _discord_found: bool
+
     def __init__(self, client_id: int):
         self.client_id = client_id
         self._presence = None
@@ -37,15 +37,20 @@ class Rpc:
         self._thread = None
         self._loop = None
 
+        self._discord_found = True
 
     async def _connect(self) -> bool:
         try:
             self._presence = AioPresence(self.client_id)
             await self._presence.connect()
             logging.info('RPC connected')
+            self._discord_found = True
             return True
-        except DiscordNotFound:
-            # TODO make it so it prints the error once . use the variables above
+        except DiscordNotFound as e:
+            # without this it will spam the console
+            if self._discord_found:
+                logging.error(e)
+                self._discord_found = False
             return False
         except Exception as e:
             self._presence = None
@@ -84,7 +89,6 @@ class Rpc:
         self._thread.start()
 
     def update(self, **kwargs) -> None:
-
         if kwargs != self._current_state:
             self._current_state = kwargs
             self._state_changed = True

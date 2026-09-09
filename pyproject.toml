@@ -11,8 +11,11 @@ dependencies = [
     "rarfile>=4.2",
     "requests>=2.32.4",
     "rich>=14.3.3",
-    "uuid7>=0.1.0",
 ]
+
+[project.urls]
+homepage = "https://github.com/danatationn/rencher"
+issues = "https://github.com/danatationn/rencher/issues"
 
 [dependency-groups]
 dev = [
@@ -35,7 +38,7 @@ namespaces = false
 
 [tool.pyright]
 # reportAny = false
-# reportExplicitAny = false
+reportExplicitAny = false
 reportMissingModuleSource = false
 reportMissingParameterType = false
 reportMissingTypeStubs = false

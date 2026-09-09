@@ -19,13 +19,13 @@ class Library(GObject.Object):
     window: 'MainWindow'
     store: Gio.ListStore
 
-    # signal name: flags, arguments, returns
-    __gsignals__: dict[str, tuple[GObject.SignalFlags, None, tuple[object]]] = {
+    # signal name: flags, return types, arg types
+    __gsignals__: dict[str, tuple[GObject.SignalFlags, None, tuple[type, ...]]] = {
         'game-added': (GObject.SignalFlags.RUN_FIRST, None, (GameEntry,)),
         'game-removed': (GObject.SignalFlags.RUN_FIRST, None, (GameEntry,)),
         'game-changed': (GObject.SignalFlags.RUN_FIRST, None, (GameEntry,)),
-        'task-started': (GObject.SignalFlags.RUN_FIRST, None, (RencherTask, object,)),
-        'task-finished': (GObject.SignalFlags.RUN_FIRST, None, (RencherTask, object,)),
+        'task-started': (GObject.SignalFlags.RUN_FIRST, None, (RencherTask, object)),
+        'task-finished': (GObject.SignalFlags.RUN_FIRST, None, (RencherTask, object)),
         'message': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
     }
 
@@ -149,11 +149,6 @@ class Library(GObject.Object):
                 self.emit('task-finished', t, entry)
             else:
                 self.emit('task-finished', t, None)
-            # entry = None
-            # if not t.is_cancelled and task.game_path:
-            #     if result := self.find(task.game_path):
-            #         entry = result[1]
-            #         self.emit('game-changed', entry)
 
         task.connect('message', self._msg)
         task.connect('notify::finished', _on_finished)

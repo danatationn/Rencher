@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING, override
 
 import rarfile
 from gi.repository import GLib, GObject
-from uuid_extensions import uuid7
 
 from rencher.gtk.game_entry import GameEntry
 from rencher.gtk.utils import windowficate_path
@@ -55,7 +54,7 @@ class RencherTask(GObject.Object):
         self.label = label
         self.max_progress = max_progress
         self.progress = 0
-        self._uuid = uuid7()
+        self._uuid = uuid.uuid4()
         self._thread = None
         self._cancel_flag = threading.Event()
         self.finished = False

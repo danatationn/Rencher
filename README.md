@@ -41,13 +41,14 @@ Main features:
 
 <details> <summary> Flatpak </summary>
 
-`flatpak-builder --install --user build/flatpak com.github.danatationn.rencher.yml` 
+`flatpak-builder --install --user build/flatpak build-aux/flatpak/com.github.danatationn.rencher.yml`
+
 * running the flatpak
 
 	`flatpak run com.github.danatationn.rencher`
 * exporting as .flatpak	
 
-	`flatpak build-bundle ~/.local/share/flatpak/repo Rencher.flatpak com.github.danatationn.rencher`
+	`flatpak build-bundle ~/.local/share/flatpak/repo build/Rencher.flatpak com.github.danatationn.rencher`
 </details>
 
 ### Windows
@@ -70,7 +71,7 @@ Main features:
 	5. `cd rencher`
 	6. `uv sync`
 	7. `meson setup build --prefix $(pwd)/build/root`
-	8. `ninja -C install`
+	8. `ninja -C build install`
 
 * Freezing (Python to EXE)
 

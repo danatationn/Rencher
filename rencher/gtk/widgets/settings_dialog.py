@@ -76,8 +76,8 @@ class SettingsDialog(Adw.PreferencesDialog):
 
         self.config.write()
 
-        # if self.config['settings']['data_dir'] != old_data_dir:
-        self.window.library.load_games()
+        if self.config['settings']['data_dir'] != old_data_dir:
+            self.window.library.load_games()
 
     @gtk_template_callback
     def on_picker_clicked(self, _widget: Gtk.Button):
