@@ -37,6 +37,7 @@ class GameDetailView(Gtk.Box):
 
     play_button: Gtk.Button = gtk_template_child()
     error_dialog: Adw.AlertDialog | None
+    options_dialog: OptionsDialog
     options_button: Gtk.Button = gtk_template_child()
 
     def __init__(self, entry: GameEntry, rpc: Rpc, row: Adw.ActionRow | Gtk.ListBoxRow, **kwargs):
@@ -51,6 +52,7 @@ class GameDetailView(Gtk.Box):
         self.game_process = None
         self.is_terminating = False
         self.error_dialog = None
+        self.options_dialog = OptionsDialog(entry)
 
         # to change the labels when the view is created, we need GObject.BindingFlags.SYNC_CREATE
         # or else it only updates when something changes
@@ -125,9 +127,8 @@ class GameDetailView(Gtk.Box):
 
     @gtk_template_callback
     def on_options_clicked(self, _widget: Gtk.Button):
-        # TODO info used to get changed via filemonitor. think of a way to update gamedetailview info
-        options_dialog = OptionsDialog(self.entry)
-        options_dialog.present(self)
+        self.options_dialog.change_game(self.entry)
+        self.options_dialog.present(self)
 
     def check_process(self) -> bool:
         if not self.game_process or self.game_process.poll() is not None:
@@ -137,6 +138,7 @@ class GameDetailView(Gtk.Box):
             self.play_button.get_style_context().add_class('suggested-action')
             # self.options_button.set_sensitive(True)
             self.is_terminating = False
+            self.options_dialog.delete_game_button.set_sensitive(True)
 
             # i have no idea how these checks would ever change but i'll keep them ig
             if self.game_process is not None:
@@ -170,6 +172,7 @@ class GameDetailView(Gtk.Box):
             if self.is_terminating:
                 self.play_button.set_label(_('Stopping'))
             else:
+                self.options_dialog.delete_game_button.set_sensitive(False)
                 self.play_button.set_label(_('Stop'))
                 if self.game_process and self.entry.game.config['overwritten']['discord_rpc'] == 'true':
                     self.rpc.update(state=self.entry.name)

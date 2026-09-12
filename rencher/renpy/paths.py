@@ -7,7 +7,6 @@ local_path = Path()
 config_path = Path()
 
 if platform.system() == 'Linux':
-    # TODO figure out why this isn't in .var/
     data_home = Path(os.environ.get('XDG_DATA_HOME', Path.home() / '.local' / 'share'))
     local_path = data_home / 'rencher'
     config_path = local_path / 'config.ini'

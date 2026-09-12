@@ -1,6 +1,7 @@
 import importlib.metadata
 import logging
 import os
+import sys
 import threading
 from collections.abc import Callable
 from configparser import ConfigParser
@@ -135,7 +136,8 @@ class MainApplication(Adw.Application):
         self.window.on_import_clicked()
 
     def on_refresh_games(self, _action: Gio.SimpleAction, _variant: GLib.Variant | None) -> None:
-        logging.info(f'Refreshing games from "{RencherConfig().get_data_dir()}"...')
+        # TODO rencher crashes when you already have a game selected
+        logging.info('Refreshing games')
         GLib.idle_add(self.window.library.load_games)
 
     def on_show_preferences(self, _action: Gio.SimpleAction, _variant: GLib.Variant | None) -> None:

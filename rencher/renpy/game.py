@@ -4,6 +4,7 @@ import platform
 import re
 import shutil
 import subprocess
+import sys
 import time
 from pathlib import Path
 from typing import override
@@ -178,10 +179,28 @@ class Game:
         self.setup()
         self.config.read()  # just to be SURE
 
-        args: list[str] = [str(self.get_exec_path())]
-        if args[0] == '':
-            ...
+        exec_path = self.get_exec_path()
+        args: list[str] = [str(exec_path)]
+
+        # if you call the file directly and it has windows line endings on unix, it will break and not run it
+        # this bypasses that
+        if exec_path and exec_path.suffix in ['.sh', '.bash']:
+            args.insert(0, 'bash')
+        elif exec_path and exec_path.suffix == '.py':
+            args.insert(0, sys.executable)
+        # TODO if args[0] == '':
+
         env: dict[str, str] = {}
+
+        # check for line endings
+        # with open(args[0], 'rb') as f:
+        #     first_line = f.readline()
+        #     if first_line.endswith(b'\r\n') and platform.system() != 'Windows':
+        #         logging.debug('Windows line endings detected. Converting launch script...')
+        #         f.seek(0)
+        #         bytes = f.read()
+        #         with open(args[0], 'wb') as f:
+        #             f.write(bytes.replace(b'\r\n', b'\n'))
 
         if self.config['overwritten']['skip_splash_scr'] == 'true':
             env['RENPY_SKIP_SPLASHSCREEN'] = '1'

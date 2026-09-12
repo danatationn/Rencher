@@ -232,10 +232,10 @@ class ImportGameTask(RencherTask):
 
             # in case nickname is not set, use the path stem
             possible_paths: list[Path] = [
-                data_dir / 'games' / self.source_path.stem,
                 data_dir / 'games' / name,
-                data_dir / 'games' / f'{self.source_path.stem} ({folder_count})',
+                data_dir / 'games' / self.source_path.stem,
                 data_dir / 'games' / f'{name} ({folder_count})',
+                data_dir / 'games' / f'{self.source_path.stem} ({folder_count})',
             ]
             folder_count += 1
 
@@ -264,9 +264,23 @@ class ImportGameTask(RencherTask):
         """
         Copy files from the source to the game directory
         """
+        def should_skip(path: Path | str) -> bool:
+            path = Path(path)
+            if path.name == 'rencher.ini' and path.parent.name == 'game':
+                return True
+            if path.name == 'persistent':
+                return True
+            if path.suffix == '.save':
+                return True
+
+            return False
+
         for path in archive_file_list:
             if self.is_cancelled or not archive:
                 break
+
+            if should_skip(path):
+                continue
 
             archive.extract(path, game_path)  # pyright: ignore[reportUnknownMemberType]
             self.advance()
@@ -274,6 +288,9 @@ class ImportGameTask(RencherTask):
         for path in folder_file_list:
             if self.is_cancelled:
                 break
+
+            if should_skip(path):
+                continue
 
             relative_path = path.relative_to(self.source_path)
             target_path = game_path / relative_path
@@ -326,11 +343,7 @@ class ImportGameTask(RencherTask):
 
                 if target_path.exists():
                     continue
-                if target_path.name == 'rencher.ini':
-                    continue
-                if target_path.name == 'persistent':
-                    continue
-                if target_path.suffix == '.save':
+                if should_skip(path):
                     continue
                 if path.is_dir():
                     target_path.mkdir(parents=True, exist_ok=True)

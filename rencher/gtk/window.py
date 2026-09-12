@@ -1,11 +1,12 @@
 from enum import Enum
+import logging
 from typing import TYPE_CHECKING
 
 from gi.repository import Adw, GLib, Gtk
 
 from rencher.gtk.game_entry import GameEntry
 from rencher.gtk.library import Library
-from rencher.gtk.tasks import RencherTask
+from rencher.gtk.tasks import DeleteGameTask, RencherTask
 from rencher.gtk.utils import gtk_template_callback, gtk_template_child
 from rencher.gtk.widgets.codename_dialog import RencherCodename
 from rencher.gtk.widgets.game_detail_view import GameDetailView
@@ -89,6 +90,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.split_view.set_show_sidebar(True)
         if not self.library_list_box.get_selected_row():
             self.library_view_stack.set_visible_child_name('game-select')
+        self.library_list_box.invalidate_sort()
 
     def _on_game_changed(self, _library: Library, entry: GameEntry) -> None:
         entry.refresh()
@@ -112,19 +114,25 @@ class MainWindow(Adw.ApplicationWindow):
         if self.game_views.get(entry, None):
             self.game_views.pop(entry)
 
-    def _on_task_started(self, _library: Library, task: RencherTask, entry: GameEntry | None):
+    def _on_task_started(self, _library: Library, task: RencherTask, entry: GameEntry | None) -> None:
         if entry:
             if not (row := self.rows.get(entry)):
                 row = GameRow(entry)
                 self.rows[entry] = row
                 self.library_list_box.append(row)
                 self.task_rows[task] = row
+            if isinstance(task, DeleteGameTask):
+                was_selected = row == self.library_list_box.get_selected_row()
+                next_row = row.get_next_sibling() or row.get_prev_sibling()
+                if was_selected and next_row:
+                    GLib.idle_add(self.library_list_box.select_row, next_row)
         else:
             row = GameRow(None, task.label)
             self.library_list_box.append(row)
             self.task_rows[task] = row
 
         row.set_task(task)
+        self.library_list_box.invalidate_sort()
 
     def _on_task_finished(self, _library: Library, task: RencherTask, entry: GameEntry | None) -> None:
         row = self.task_rows.pop(task, None)
@@ -137,6 +145,9 @@ class MainWindow(Adw.ApplicationWindow):
                 row.set_task(None)
                 self.rows[entry] = row
                 self.games[row] = entry
+
+        # only this one works
+        self.library_list_box.invalidate_sort()
 
     def _on_message(self, _task: RencherTask, text: str) -> None:
         toast = Adw.Toast.new(text)
@@ -186,7 +197,7 @@ class MainWindow(Adw.ApplicationWindow):
     def filter_func(self, widget: GameRow) -> bool:
         if not self.filter_text:
             return True
-        elif self.filter_text.lower() in widget.button_row.get_title().lower():
+        elif self.filter_text.lower() in widget.btn.get_title().lower():
             return True
         else:
             return False
@@ -194,26 +205,34 @@ class MainWindow(Adw.ApplicationWindow):
     def sort_func(self, one: GameRow, two: GameRow) -> int:
         entry_one = self.games.get(one, None)
         entry_two = self.games.get(two, None)
-        if not entry_one or not entry_one.game or not entry_two or not entry_two.game:
-            return 0
 
         one_value: str | int | float
         two_value: str | int | float
 
-        if self.combo_index == SortComboEnum.NAME:
-            one_value = entry_one.name.lower()
-            two_value = entry_two.name.lower()
-        elif self.combo_index == SortComboEnum.LAST_PLAYED:
-            one_value = entry_one.game.config.get_value('last_played') or 0.0
-            two_value = entry_two.game.config.get_value('last_played') or 0.0
-        elif self.combo_index == SortComboEnum.PLAYTIME:
-            one_value = entry_one.game.config.get_value('playtime') or 0.0
-            two_value = entry_two.game.config.get_value('playtime') or 0.0
-        elif self.combo_index == SortComboEnum.ADDED_ON:
-            one_value = entry_one.game.config.get_value('added_on') or 0.0
-            two_value = entry_two.game.config.get_value('added_on') or 0.0
-        else:
+        # entry is currently importing . so whatevsif not entry_one or not entry_two:
+        if one.has_task or two.has_task:
+            if self.combo_index == SortComboEnum.NAME:
+                one_value = one.btn.get_title()
+                two_value = two.btn.get_title()
+            else:
+                return 0
+        elif not entry_one or not entry_one.game or not entry_two or not entry_two.game:
             return 0
+        else:
+            if self.combo_index == SortComboEnum.NAME:
+                one_value = entry_one.name.lower()
+                two_value = entry_two.name.lower()
+            elif self.combo_index == SortComboEnum.LAST_PLAYED:
+                one_value = entry_one.game.config.get_value('last_played') or 0.0
+                two_value = entry_two.game.config.get_value('last_played') or 0.0
+            elif self.combo_index == SortComboEnum.PLAYTIME:
+                one_value = entry_one.game.config.get_value('playtime') or 0.0
+                two_value = entry_two.game.config.get_value('playtime') or 0.0
+            elif self.combo_index == SortComboEnum.ADDED_ON:
+                one_value = entry_one.game.config.get_value('added_on') or 0.0
+                two_value = entry_two.game.config.get_value('added_on') or 0.0
+            else:
+                return 0
 
         if one_value < two_value:  # pyright: ignore[reportOperatorIssue]
             res = 1

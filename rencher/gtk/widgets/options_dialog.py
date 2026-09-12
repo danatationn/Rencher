@@ -1,6 +1,5 @@
 import logging
 import os
-import threading
 from configparser import ConfigParser
 from gettext import gettext as _
 from pathlib import Path
@@ -21,6 +20,7 @@ class OptionsDialog(Adw.PreferencesDialog):
     nickname_entry: Adw.EntryRow = gtk_template_child()
     location_row: Adw.ActionRow = gtk_template_child()
     codename_combo: Adw.ComboRow = gtk_template_child()
+    delete_game_button: Adw.ButtonRow = gtk_template_child()
     skip_splash_scr_switch: Adw.SwitchRow = gtk_template_child()
     skip_main_menu_switch: Adw.SwitchRow = gtk_template_child()
     forced_save_dir_switch: Adw.SwitchRow = gtk_template_child()
@@ -145,7 +145,8 @@ class OptionsDialog(Adw.PreferencesDialog):
     def on_clear_info(self, _widget: Adw.ButtonRow):  # type: ignore
         dialog = Adw.AlertDialog(
             heading=_('Are you sure?'),
-            body=_(f'This will permanently reset all user data for "{self.entry.name}".\nThis action cannot be undone.'),
+            body=_('This will permanently reset all user data for "{}".\nThis action cannot be undone.')
+                .format(self.entry.name),
         )
         dialog.add_response('cancel', _('No'))
         dialog.add_response('ok', _('Yes'))
@@ -155,7 +156,7 @@ class OptionsDialog(Adw.PreferencesDialog):
         dialog.choose(self)
         dialog.connect('response', self.on_clear_info_response)
 
-    def on_clear_info_response(self, _, response: str):
+    def on_clear_info_response(self, _dialog: Adw.AlertDialog, response: str):
         if response == 'ok':
             # slaughter time
             # self.entry.config['info']['nickname'] = ''
@@ -168,9 +169,8 @@ class OptionsDialog(Adw.PreferencesDialog):
 
             # self.game.config.write_config()
 
-            # TODO think how to do this
             toast = Adw.Toast(
-                title=_(f'"{self.entry.name}" stats have been reset'),
+                title=_('"{}" stats have been reset').format(self.entry.name),
                 timeout=5,
             )
             self.add_toast(toast)

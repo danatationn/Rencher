@@ -37,18 +37,12 @@ where = ["."]
 namespaces = false
 
 [tool.pyright]
-# reportAny = false
 reportExplicitAny = false
 reportMissingModuleSource = false
 reportMissingParameterType = false
 reportMissingTypeStubs = false
 reportUnusedCallResult = false
-# reportUnknownMemberType = false
-# i need to disable all of these, just for lambdas
-# would've loved to have the parameter and argument ones on
-# reportUnknownLambdaType = false
-# reportUnknownParameterType = false
-# reportUnknownArgumentType = false
+reportImportCycles = false
 
 [tool.ruff]
 line-length = 120

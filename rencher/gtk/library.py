@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import os.path
 from pathlib import Path
@@ -63,17 +62,14 @@ class Library(GObject.Object):
         data_dir = RencherConfig().get_data_dir()
         games_dir = Path(data_dir) / 'games'
         games_dir.mkdir(exist_ok=True, parents=True)
+        logging.info(f'Loading games from "{data_dir}"')
         for item in list(self.store):
             if isinstance(item, GameEntry):
                 self.remove_game(item.rpath)
 
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        for d in games_dir.iterdir():
-            rpath = os.path.join(games_dir, d)
-            # TODO every llm tells me this is ass so i'll replace it
-            # yeah this broke
-            loop.run_in_executor(None, GLib.idle_add, self.add_game, rpath)
+        for dir in games_dir.iterdir():
+            rpath = games_dir / dir
+            GLib.idle_add(self.add_game, rpath)
 
     def _msg(self, _t: RencherTask, text: str):
         self.emit('message', text)

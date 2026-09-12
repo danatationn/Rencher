@@ -46,7 +46,7 @@ def launch() -> None:
     from gi.repository import Gio
 
     res = Gio.resource_load(gres_path)
-    res._register()
+    res._register()  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType]
 
     from rencher.gtk.application import MainApplication  # noqa: E402
 

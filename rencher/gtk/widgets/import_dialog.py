@@ -49,9 +49,10 @@ class ImportDialog(Adw.Dialog):
         self.archive_location = ''
         self.folder_location = ''
         self.has_imported = False
-
         self.window = window
-        self.do_show()
+
+        # after importing something, focus will be lost from title_entry
+        self.connect('map', lambda *_: self.title_entry.grab_focus())
 
     @override
     def do_show(self):
@@ -59,7 +60,7 @@ class ImportDialog(Adw.Dialog):
         list_store_len = 0
 
         list_store.append(GameEntry())  # option for no mod . default
-        for _, game_item in enumerate(self.window.library.store):
+        for game_item in self.window.library.store:
             if not isinstance(game_item, GameEntry):
                 continue
             if not game_item.game.is_mod:
@@ -77,9 +78,13 @@ class ImportDialog(Adw.Dialog):
             Gtk.ClosureExpression.new(str, _name_for_entry, None),
         )
 
+    @override
+    def do_closed(self) -> None:
         if self.has_imported:
             self.title_entry.set_text('')
             self.location_entry.set_text('')
+            self.archive_location = ''
+            self.folder_location = ''
             self.has_imported = False
 
     @gtk_template_callback
@@ -110,6 +115,10 @@ class ImportDialog(Adw.Dialog):
             self.folder_location = location_text
         elif self.selected_type == ImportTypeEnum.ARCHIVE:
             self.archive_location = location_text
+
+        if location_text == '':
+            self.import_button.set_sensitive(False)
+            return
 
         if not Path(path).exists():
             self._fail(_('The path does not exist'))
@@ -159,7 +168,7 @@ class ImportDialog(Adw.Dialog):
             pass  # dialog was dismissed by user
 
     @gtk_template_callback
-    def on_import_clicked(self, _) -> None:
+    def on_import_clicked(self, _button: Adw.ActionRow) -> None:
         target_game = self.game_combo.get_selected_item()
         game_rpath = ''
         if hasattr(target_game, '_game') and isinstance(target_game, GameEntry):
@@ -170,4 +179,5 @@ class ImportDialog(Adw.Dialog):
             GLib.Variant('(sss)', (self.location_entry.get_text(), self.title_entry.get_text(), game_rpath)),
         )
 
+        self.has_imported = True
         self.close()
